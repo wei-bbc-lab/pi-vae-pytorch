@@ -63,7 +63,7 @@ class NFlowLayer(nn.Module):
     z_dim (int) - latent z dimension
     n_hidden_layers (int) - number of MLP hidden layers. Default: 2
     hidden_layer_dim (int) - dimension of MLP hidden layers. Default: None
-    hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers
+    hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers. Default: nn.ReLU
 
     Notes
     -----
@@ -114,7 +114,7 @@ class AffineCouplingLayer(nn.Module):
     Parameters
     ----------
     x_dim (int) - observed x dimension
-    x_slice_dim (int) - index at which to split an n-dimensional input x. Default: None
+    x_slice_dim (int) - index at which to split an n-dimensional sample x. Default: None
     n_hidden_layers (int) - number of MLP hidden layers. Default: 2
     hidden_layer_dim (int) - dimension of MLP hidden layers. Default: None
     hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers
@@ -224,17 +224,17 @@ class PermutationLayer(nn.Module):
 
 class GINBlock(nn.Module):
     """
-    Performs a series of affine coupling transformations with inputs randomly permuted
-    before applying each affine coupling function.
+    General Incompressible-flow Network (GIN). Performs a series of affine coupling transformations 
+    with inputs randomly permuted before applying each affine coupling function.
 
     Parameters
     ----------
     x_dim (int) - observed x dimension
     n_affine_layers (int) - number of AffineCouplingLayers in the block. Default: 2
-    affine_input_layer_slice_dim (int) - placeholder. Default: None
-    affine_n_hidden_layers (int) - number of MLP hidden layers in each AffineCouplingLayer. Default: 2
-    affine_hidden_layer_dim (int) - dimension of each MLP hidden layer in each AffineCouplingLayer. Default: None
-    affine_hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers in each AffineCouplingLayer. Default: nn.ReLU
+    affine_input_layer_slice_dim (int) - index at which to split an n-dimensional sample x input to each AffineCouplingLayer. Default: None
+    affine_n_hidden_layers (int) - number of MLP hidden layers within each AffineCouplingLayer. Default: 2
+    affine_hidden_layer_dim (int) - dimension of each MLP hidden layer within each AffineCouplingLayer. Default: None
+    affine_hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers within each AffineCouplingLayer. Default: nn.ReLU
 
     Notes
     -----
