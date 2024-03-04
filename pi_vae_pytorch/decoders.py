@@ -42,7 +42,7 @@ class GINFlowDecoder(nn.Module):
         nflow_hidden_layer_dim: int = None,
         nflow_hidden_layer_activation: nn.Module = nn.ReLU,
         observation_model="poisson"
-        ):
+        ) -> None:
         super().__init__()
 
         self.output_activation = nn.Softplus() if observation_model == "poisson" else nn.Identity()

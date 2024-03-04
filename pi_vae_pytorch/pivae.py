@@ -64,7 +64,7 @@ class PiVAE(nn.Module):
         z_prior_n_hidden_layers: int = 2,
         z_prior_hidden_layer_dim: int = 20,
         z_prior_hidden_layer_activation: nn.Module = nn.Tanh
-        ):
+        ) -> None:
         super().__init__()
 
         self.encoder = MLPEncoder(

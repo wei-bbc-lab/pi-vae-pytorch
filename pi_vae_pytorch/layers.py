@@ -26,7 +26,7 @@ class MLP(nn.Module):
         n_hidden_layers: int,
         hidden_layer_features: int,
         activation: nn.Module
-        ):
+        ) -> None:
         super().__init__()
 
         self.net = nn.ModuleList([])
@@ -50,6 +50,39 @@ class MLP(nn.Module):
         ) -> Tensor:
 
         return self.net(input)
+
+
+class PermutationLayer(nn.Module):
+    """
+    Randomly permutes n channels. 
+
+    Parameters
+    ----------
+    n_channels: number of channels to permute
+    """
+
+    def __init__(
+        self,
+        n_channels: int
+        ) -> None:
+        super().__init__()
+
+        self.register_buffer('perm', torch.randperm(n_channels))
+        self.register_buffer('invperm', torch.argsort(self.perm))
+
+    def forward(
+        self,
+        x: Tensor
+        ) -> Tensor:
+
+        return x[:, self.perm]
+
+    def backward(
+        self,
+        x: Tensor
+        ) -> Tensor:
+
+        return x[:, self.invperm]
 
 
 class NFlowLayer(nn.Module):
@@ -77,7 +110,7 @@ class NFlowLayer(nn.Module):
         n_hidden_layers: int = 2,
         hidden_layer_dim: int = None,
         hidden_layer_activation: nn.Module = nn.ReLU
-        ):
+        ) -> None:
         super().__init__()
 
         # Compute hidden layer dimension
@@ -134,7 +167,7 @@ class AffineCouplingLayer(nn.Module):
         n_hidden_layers: int = 2,
         hidden_layer_dim: int = None,
         hidden_layer_activation: nn.Module = nn.ReLU
-        ):
+        ) -> None:
         super().__init__()
 
         self.x_dim = x_dim
@@ -189,39 +222,6 @@ class AffineCouplingLayer(nn.Module):
         return torch.cat((transform_x, x_1), dim=-1)
 
 
-class PermutationLayer(nn.Module):
-    """
-    Randomly permutes n channels. 
-
-    Parameters
-    ----------
-    n_channels: number of channels to permute
-    """
-
-    def __init__(
-        self,
-        n_channels: int
-        ):
-        super().__init__()
-
-        self.register_buffer('perm', torch.randperm(n_channels))
-        self.register_buffer('invperm', torch.argsort(self.perm))
-
-    def forward(
-        self,
-        x: Tensor
-        ) -> Tensor:
-
-        return x[:, self.perm]
-
-    def backward(
-        self,
-        x: Tensor
-        ) -> Tensor:
-
-        return x[:, self.invperm]
-
-
 class GINBlock(nn.Module):
     """
     General Incompressible-flow Network (GIN). Performs a series of affine coupling transformations 
@@ -250,7 +250,7 @@ class GINBlock(nn.Module):
         affine_n_hidden_layers: int = 2,
         affine_hidden_layer_dim: int = None,
         affine_hidden_layer_activation: nn.Module = nn.ReLU
-        ):
+        ) -> None:
         super().__init__()
 
         layers = [
@@ -293,7 +293,7 @@ class ZPriorContinuous(nn.Module):
         n_hidden_layers: int = 2,
         hidden_layer_dim: int = 20,
         hidden_layer_activation: nn.Module = nn.Tanh
-        ):
+        ) -> None:
         super().__init__()
 
         self.net = MLP(
@@ -331,7 +331,7 @@ class ZPriorDiscrete(nn.Module):
         self,
         u_dim: int,
         z_dim: int
-        ):
+        ) -> None:
         super().__init__()
 
         self.embedded_mean = nn.Embedding(

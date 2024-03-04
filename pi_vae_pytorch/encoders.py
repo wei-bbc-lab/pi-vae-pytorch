@@ -26,7 +26,7 @@ class MLPEncoder(nn.Module):
         n_hidden_layers: int = 2,
         hidden_layer_dim: int = 120,
         activation: nn.Module = nn.Tanh
-        ):
+        ) -> None:
         super().__init__()
 
         self.net = MLP(
