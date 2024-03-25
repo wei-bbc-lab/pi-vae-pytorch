@@ -25,16 +25,14 @@ model = PiVAE(
     discrete_labels=False
 )
 
-# Size([n_samples, x_dim])
-x = torch.randn(1, 100) 
+x = torch.randn(1, 100) # Size([n_samples, x_dim])
 
-# Size([n_samples, u_dim])
-u = torch.randn(1, 3) 
+u = torch.randn(1, 3) # Size([n_samples, u_dim])
 
-outputs = model(x, u)
+outputs = model(x, u) # dict
 ```
 
-## Parameters
+### Parameters
 
 - `x_dim`: int  
     Dimension of observation `x`
@@ -43,57 +41,133 @@ outputs = model(x, u)
 - `z_dim`: int  
     Dimension of latent `z`
 - `discrete_labels`: bool  
-    Flag denoting `u`'s label type - `True`/discrete or `False`/continuous. Default: `True`
+    - Default: `True`  
+
+    Flag denoting `u`'s label type - `True`: discrete or `False`: continuous.
 - `encoder_n_hidden_layers`: int  
-    Number of hidden layers in the MLP of the model's encoder. Default: `2`
+    - Default: `2`  
+
+    Number of hidden layers in the MLP of the model's encoder. 
 - `encoder_hidden_layer_dim`: int  
-    Dimensionality of each hidden layer in the MLP of the model's encoder. Default: `120`
+    - Default: `120`  
+
+    Dimensionality of each hidden layer in the MLP of the model's encoder. 
 - `encoder_hidden_layer_activation`: nn.Module    
-    Activation function applied to the outputs of each hidden layer in the MLP of the model's encoder. Default: `nn.Tanh`
+    - Default: `nn.Tanh`  
+
+    Activation function applied to the outputs of each hidden layer in the MLP of the model's encoder. 
 - `decoder_n_gin_blocks`: int  
-    Number of GIN blocks used within the model's decoder. Default: `2`
+    - Default: `2`  
+
+    Number of GIN blocks used within the model's decoder. 
 - `decoder_gin_block_depth`: int   
-    Number of AffineCouplingLayers which comprise each GIN block
+    - Default: `2`  
+
+    Number of AffineCouplingLayers which comprise each GIN block.
 - `decoder_affine_input_layer_slice_dim`: int  
-    Index at which to split an n-dimensional input x. Default None (corresponds to `x_dim / 2`)
+    - Default None (corresponds to `x_dim / 2`)  
+
+    Index at which to split an n-dimensional input x. 
 - `decoder_affine_n_hidden_layers`: int  
-    Number of hidden layers in the MLP of the model's encoder. Default: `2`
+    - Default: `2`  
+
+    Number of hidden layers in the MLP of the model's encoder. 
 - `decoder_affine_hidden_layer_dim`: int  
-    Dimensionality of each hidden layer in the MLP of each AffineCouplingLayer. Default: `None` (corresponds to `x_dim / 4`)
+    - Default: `None` (corresponds to `x_dim / 4`)  
+
+    Dimensionality of each hidden layer in the MLP of each AffineCouplingLayer. 
 - `decoder_affine_hidden_layer_activation`: nn.Module  
-    Activation function applied to the outputs of each hidden layer in the MLP of each AffineCouplingLayer. Default: `nn.ReLU`
+    - Default: `nn.ReLU`  
+
+    Activation function applied to the outputs of each hidden layer in the MLP of each AffineCouplingLayer. 
 - `decoder_nflow_n_hidden_layers`: int  
-    Number of hidden layers in the MLP of the decoder's NFlowLayer. Default: `2`
+    - Default: `2`  
+
+    Number of hidden layers in the MLP of the decoder's NFlowLayer. 
 - `decoder_nflow_hidden_layer_dim`: int  
-    Dimensionality of each hidden layer in the MLP of the decoder's NFlowLayer. Default: `None` (corresponds to `x_dim / 4`)
-- `decoder_nflow_hidden_layer_activation`: nn.Module = nn.ReLU,  
-    Activation function applied to the outputs of each hidden layer in the MLP of the decoder's NFlowLayer. Default: `nn.ReLU`
-- `decoder_obervation_model`: str  
-    Observation model used by the model's decoder (`gaussian` | `poisson`). Default: `poisson`
+    - Default: `None` (corresponds to `x_dim / 4`)  
+
+    Dimensionality of each hidden layer in the MLP of the decoder's NFlowLayer. 
+- `decoder_nflow_hidden_layer_activation`: nn.Module   
+    - Default: `nn.ReLU`  
+
+    Activation function applied to the outputs of each hidden layer in the MLP of the decoder's NFlowLayer. 
+- `decoder_observation_model`: str  
+    - Default: `poisson`  
+    - One of `gaussian` or `poisson`
+
+    Observation model used by the model's decoder. 
+- `decoder_fr_clamp_min`: float  
+    - Default: `1E-7`  
+    - Only applied when `decoder_observation_model="poisson"`
+
+    Mininimum threshold used when clamping decoded firing rates.
+- `decoder_fr_clamp_max`: float  
+    - Default: `1E7` 
+    - Only applied when `decoder_observation_model="poisson"`
+
+    Maximum threshold used when clamping decoded firing rates.
 - `z_prior_n_hidden_layers`: int  
-    Number of hidden layers in the MLP of the ZPriorContinuous module. Default: `2`
+    - Default: `2`  
+    - Only applied when `discrete_labels=False`  
+
+    Number of hidden layers in the MLP of the ZPriorContinuous module. 
 - `z_prior_hidden_layer_dim`: int  
-    Dimensionality of each hidden layer in the MLP of the ZPriorContinuous module. Default: `20`
+    - Default: `20`  
+    - Only applied when `discrete_labels=False`
+
+    Dimensionality of each hidden layer in the MLP of the ZPriorContinuous module. 
 - `z_prior_hidden_layer_activation`: nn.Module  
-    Activation function applied to the outputs of each hidden layer in the MLP of the decoder's ZPriorContinuous module. Default: `nn.Tanh`
+    - Default: `nn.Tanh`  
+    - Only applied when `discrete_labels=False`
 
-## Outputs
+    Activation function applied to the outputs of each hidden layer in the MLP of the decoder's ZPriorContinuous module. 
 
-- `firing_rate`: predicted firing rates of `z_sample`. Size([n_samples, x_dim])
-- `lambda_mean`: Size([n_samples, z_dim])
-- `lambda_log_variance`: Size([n_samples, z_dim])
-- `posterior_mean`: Size([n_samples, z_dim])
-- `posterior_log_variance`: Size([n_samples, z_dim])
-- `z_mean`: Size([n_samples, z_dim])
-- `z_log_variance`: Size([n_samples, z_dim])
-- `z_sample`: generated latents. Size([n_samples, z_dim])
+### Returns
+
+A dicitonary with the following items. 
+
+- `firing_rate`: Tensor   
+    - Size([n_samples, x_dim])  
+
+    Predicted firing rates of `z_sample`. 
+- `lambda_mean`: Tensor  
+    - Size([n_samples, z_dim])  
+
+    Mean for each sample using label prior p(z|u). 
+- `lambda_log_variance`: Tensor  
+    - Size([n_samples, z_dim])  
+    
+    Log of variance for each sample using label prior p(z|u). 
+- `posterior_mean`: Tensor  
+    - Size([n_samples, z_dim])  
+
+    Mean for each sample using full posterior of q(z|x,u)~q(z|x)p(z|u). 
+- `posterior_log_variance`: Tensor  
+    - Size([n_samples, z_dim])  
+
+    Log of variance for each sample using full posterior of q(z|x,u)~q(z|x)p(z|u). 
+- `z_mean`: Tensor  
+    - Size([n_samples, z_dim])  
+
+    Mean for each sample using approximation of q(z|x). 
+- `z_log_variance`: Tensor  
+    - Size([n_samples, z_dim])  
+
+    Log of variance for each sample using approximation of q(z|x). 
+- `z_sample`: Tensor  
+    - Size([n_samples, z_dim])  
+    
+    Generated latents `z`. 
 
 ## Loss Function
+
+### Poisson observation model
 
 ```
 from pi_vae_pytorch.utils import compute_loss
 
-outputs = model(x, u)
+outputs = model(x, u) # Initialized with decoder_observation_model="poisson" 
 
 loss = compute_loss(
     x=x,
@@ -102,16 +176,69 @@ loss = compute_loss(
     lambda_log_variance=outputs["lambda_log_variance"],
     posterior_mean=outputs["posterior_mean"],
     posterior_log_variance=outputs["posterior_log_variance"],
-    observation_model="poisson",
-    observation_noise_model=nn.Linear(
-        in_features=1,
-        out_features=x_dim, 
-        bias=False
-    )
+    observation_model=model.decoder_observation_model
 )
 
 loss.backward()
 ```
+
+### Gaussian observation model
+
+```
+from pi_vae_pytorch.utils import compute_loss
+
+outputs = model(x, u) # Initialized with decoder_observation_model="gaussian" 
+
+loss = compute_loss(
+    x=x,
+    firing_rate=outputs["firing_rate"],
+    lambda_mean=outputs["lambda_mean"],
+    lambda_log_variance=outputs["lambda_log_variance"],
+    posterior_mean=outputs["posterior_mean"],
+    posterior_log_variance=outputs["posterior_log_variance"],
+    observation_model=model.decoder_observation_model,
+    observation_noise_model=model.observation_noise_model
+)
+
+loss.backward()
+```
+
+### Parameters
+
+- `x`: Tensor  
+    - Size([n_samples, x_dim])  
+
+    Observations `x`.  
+- `firing_rate`: Tensor 
+    - Size([n_samples, x_dim])  
+
+    Predicted firing rate of generated latent `z`. 
+- `lambda_mean`: Tensor 
+    - Size([n_samples, z_dim])  
+    
+    Means from label prior p(z|u). 
+- `lambda_log_variance`: Tensor 
+    - Size([n_samples, z_dim])  
+    
+    Log of variances from label prior p(z|u). 
+- `posterior_mean`: Tensor 
+    - Size([n_samples. z_dim])  
+    
+    Means from full posterior of q(z|x,u)~q(z|x)p(z|u). 
+- `posterior_log_variance`: Tensor 
+    - Size([n_samples. z_dim])  
+    
+    Log of variances from full posterior of q(z|x,u)~q(z|x)p(z|u).
+- `observation_model`: str  
+    - One of `poisson` or `gaussian`  
+    - Should use the same value passed to `decoder_observation_model` when initializing `PiVAE`.  
+
+    The observation model used by pi-VAE's decoder.
+- `observation_noise_model`: nn.Module 
+    - Default: None  
+    - Only applied when `observation model="gaussian"`  
+    
+    The noise model used when pi-VAE's decoder utilizes a Gaussian observation model. When `PiVAE` is initialized with `decoder_observation_model="gaussian"`, the model's `observation_noise_model` attribute can be used.
 
 ## Citation
 
