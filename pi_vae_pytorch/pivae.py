@@ -1,6 +1,6 @@
 from typing import Dict
 
-from torch import nn, Tensor
+from torch import clamp, nn, Tensor
 
 from pi_vae_pytorch.decoders import GINFlowDecoder
 from pi_vae_pytorch.encoders import MLPEncoder
@@ -26,14 +26,16 @@ class PiVAE(nn.Module):
     decoder_gin_block_depth (int) - depth of each GINBlock in the GINFlowDecoder. Default: 2
     decoder_affine_input_layer_slice_dim (int) - index at which to split an n-dimensional sample x input to each AffineCouplingLayer. Default: None
     decoder_affine_n_hidden_layers (int) - number of each AffineCouplingLayer's MLP hidden layers. Default: 2
-    decoder_affine_hidden_layer_dim (int) - dimension of each AffineCouplingLayer's MLP hidden layers. Default: None,
-    decoder_affine_hidden_layer_activation (nn.Module) - activation function applied to each AffineCouplingLayer's MLP hidden layers. Default: nn.ReLU,
-    decoder_nflow_n_hidden_layers (int) - number of the NFlowLayer's MLP hidden layers. Default: 2,
-    decoder_nflow_hidden_layer_dim (int) - dimension of the NFlowLayer's MLP hidden layers. Default: None,
-    decoder_nflow_hidden_layer_activation (nn.Module) - activation function applied to the NFlowLayer's MLP hidden layers. Default: nn.ReLU,
-    decoder_obervation_model (str) - GINFlowDecoder's observation model poisson/gaussian Default: "poisson",
-    z_prior_n_hidden_layers (int) - number of the ZPriorContinuous's MLP hidden layers. Default: 2,
-    z_prior_hidden_layer_dim (int) - dimension of the ZPriorContinuous's MLP hidden layers. Default: 20,
+    decoder_affine_hidden_layer_dim (int) - dimension of each AffineCouplingLayer's MLP hidden layers. Default: None
+    decoder_affine_hidden_layer_activation (nn.Module) - activation function applied to each AffineCouplingLayer's MLP hidden layers. Default: nn.ReLU
+    decoder_nflow_n_hidden_layers (int) - number of the NFlowLayer's MLP hidden layers. Default: 2
+    decoder_nflow_hidden_layer_dim (int) - dimension of the NFlowLayer's MLP hidden layers. Default: None
+    decoder_nflow_hidden_layer_activation (nn.Module) - activation function applied to the NFlowLayer's MLP hidden layers. Default: nn.ReLU
+    decoder_observation_model (str) - GINFlowDecoder's observation model poisson/gaussian Default: "poisson"
+    decoder_fr_clamp_min (float) - min value used when clamping decoded firing rates. Default: 1E-7
+    decoder_fr_clamp_max (float) - max value used when clamping decoded firing rates. Default: 1E7
+    z_prior_n_hidden_layers (int) - number of the ZPriorContinuous's MLP hidden layers. Default: 2
+    z_prior_hidden_layer_dim (int) - dimension of the ZPriorContinuous's MLP hidden layers. Default: 20
     z_prior_hidden_layer_activation (nn.Module) - activation function applied to the ZPriorContinuous's MLP hidden layers. Default: nn.Tanh
 
     Notes
@@ -60,20 +62,25 @@ class PiVAE(nn.Module):
         decoder_nflow_n_hidden_layers: int = 2,
         decoder_nflow_hidden_layer_dim: int = None,
         decoder_nflow_hidden_layer_activation: nn.Module = nn.ReLU,
-        decoder_obervation_model: str = "poisson",
+        decoder_observation_model: str = "poisson",
+        decoder_fr_clamp_min: float = 1E-7,
+        decoder_fr_clamp_max: float = 1E7,
         z_prior_n_hidden_layers: int = 2,
         z_prior_hidden_layer_dim: int = 20,
         z_prior_hidden_layer_activation: nn.Module = nn.Tanh
         ) -> None:
         super().__init__()
 
-        self.encoder = MLPEncoder(
-            x_dim=x_dim,
-            z_dim=z_dim,
-            n_hidden_layers=encoder_n_hidden_layers,
-            hidden_layer_dim=encoder_hidden_layer_dim,
-            activation=encoder_hidden_layer_activation
-        )
+        if decoder_observation_model == "gaussian":
+            self.observation_noise_model = nn.Linear(
+                in_features=1,
+                out_features=x_dim, 
+                bias=False
+            )
+        elif decoder_observation_model == "poisson":
+            self.observation_noise_model = None
+        else:
+            raise ValueError(f"Invalid observation model: {decoder_observation_model}")
         
         self.decoder = GINFlowDecoder(
             x_dim=x_dim,
@@ -87,18 +94,21 @@ class PiVAE(nn.Module):
             nflow_n_hidden_layers=decoder_nflow_n_hidden_layers,
             nflow_hidden_layer_dim=decoder_nflow_hidden_layer_dim,
             nflow_hidden_layer_activation=decoder_nflow_hidden_layer_activation,
-            observation_model=decoder_obervation_model
+            observation_model=decoder_observation_model
         )
 
-        self.decoder_observation_model = decoder_obervation_model
-
-        if decoder_obervation_model == "gaussian":
-            self.observation_noise_model = nn.Linear(
-                in_features=1,
-                out_features=x_dim, 
-                bias=False
-            )
-
+        self.decoder_fr_clamp_min = decoder_fr_clamp_min
+        self.decoder_fr_clamp_max = decoder_fr_clamp_max
+        self.decoder_observation_model = decoder_observation_model
+        
+        self.encoder = MLPEncoder(
+            x_dim=x_dim,
+            z_dim=z_dim,
+            n_hidden_layers=encoder_n_hidden_layers,
+            hidden_layer_dim=encoder_hidden_layer_dim,
+            activation=encoder_hidden_layer_activation
+        )
+        
         if discrete_labels:
             self.z_prior = ZPriorDiscrete(
                 u_dim=u_dim,
@@ -136,6 +146,8 @@ class PiVAE(nn.Module):
 
         # Generate firing rate using sampled latent z
         firing_rate = self.decoder(z_sample)
+        if self.decoder_observation_model == "poisson":
+            firing_rate = clamp(firing_rate, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
 
         return {
             "firing_rate": firing_rate,

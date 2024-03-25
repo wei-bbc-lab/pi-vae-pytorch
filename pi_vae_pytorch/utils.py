@@ -49,9 +49,7 @@ def compute_loss(
     posterior_mean: Tensor, 
     posterior_log_variance: Tensor,
     observation_model: str,
-    observation_noise_model: nn.Module = None,
-    fr_clamp_min: float = 1E-7,
-    fr_clamp_max: float = 1E7
+    observation_noise_model: nn.Module = None
     ) -> Tensor:
     """ 
     pi-VAE Loss function
@@ -62,13 +60,11 @@ def compute_loss(
     firing_rate (Tensor) - decoded firing rates. Size([n_samples, x_dim])
     lambda_mean (Tensor) - means from label prior p(z|u). Size([n_samples, z_dim])
     lambda_log_variance (Tensor) - log of variances from label prior p(z|u). Size([n_samples, z_dim])
-    posterior_mean (Tensor) - means from posterior q(z|x). Size([n_samples. z_dim])
-    posterior_log_variance (Tensor) - log of variances from posterior q(z|x). Size([n_samples, z_dim])
+    posterior_mean (Tensor) - means from posterior q(z|x,u)~q(z|x)p(z|u). Size([n_samples. z_dim])
+    posterior_log_variance (Tensor) - log of variances from posterior q(z|x,u)~q(z|x)p(z|u). Size([n_samples, z_dim])
     observation_model (str) - poisson or gaussian
     observation_noise_model (nn.Module) - if gaussian observation model, set the observation noise level as different real numbers. Default: None 
-    fr_clamp_min (float) - min value used when clamping firing rates. Default: 1E-7
-    fr_clamp_max (float) - max value used when clamping firing rates. Default: 1E7
-
+    
     Returns
     -------
     The total loss (Tensor)
@@ -86,7 +82,6 @@ def compute_loss(
     """
 
     if observation_model == "poisson":
-        firing_rate = torch.clamp(firing_rate, min=fr_clamp_min, max=fr_clamp_max)
         observation_log_liklihood = torch.sum(firing_rate - x * torch.log(firing_rate), -1)
     elif observation_model == "gaussian":
         observation_log_variance = observation_noise_model(torch.ones((1, 1)))
