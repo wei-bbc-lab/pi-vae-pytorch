@@ -134,27 +134,27 @@ A dicitonary with the following items.
 - `lambda_mean`: Tensor  
     - Size([n_samples, z_dim])  
 
-    Mean for each sample using label prior p(z|u). 
+    Mean for each sample using label prior p(z \| u). 
 - `lambda_log_variance`: Tensor  
     - Size([n_samples, z_dim])  
     
-    Log of variance for each sample using label prior p(z|u). 
+    Log of variance for each sample using label prior p(z \| u). 
 - `posterior_mean`: Tensor  
     - Size([n_samples, z_dim])  
 
-    Mean for each sample using full posterior of q(z|x,u)~q(z|x)p(z|u). 
+    Mean for each sample using full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u). 
 - `posterior_log_variance`: Tensor  
     - Size([n_samples, z_dim])  
 
-    Log of variance for each sample using full posterior of q(z|x,u)~q(z|x)p(z|u). 
+    Log of variance for each sample using full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u). 
 - `z_mean`: Tensor  
     - Size([n_samples, z_dim])  
 
-    Mean for each sample using approximation of q(z|x). 
+    Mean for each sample using approximation of q(z \| x). 
 - `z_log_variance`: Tensor  
     - Size([n_samples, z_dim])  
 
-    Log of variance for each sample using approximation of q(z|x). 
+    Log of variance for each sample using approximation of q(z \| x). 
 - `z_sample`: Tensor  
     - Size([n_samples, z_dim])  
     
@@ -216,19 +216,19 @@ loss.backward()
 - `lambda_mean`: Tensor 
     - Size([n_samples, z_dim])  
     
-    Means from label prior p(z|u). 
+    Means from label prior p(z \| u). 
 - `lambda_log_variance`: Tensor 
     - Size([n_samples, z_dim])  
     
-    Log of variances from label prior p(z|u). 
+    Log of variances from label prior p(z \| u). 
 - `posterior_mean`: Tensor 
     - Size([n_samples. z_dim])  
     
-    Means from full posterior of q(z|x,u)~q(z|x)p(z|u). 
+    Means from full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u). 
 - `posterior_log_variance`: Tensor 
     - Size([n_samples. z_dim])  
     
-    Log of variances from full posterior of q(z|x,u)~q(z|x)p(z|u).
+    Log of variances from full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u).
 - `observation_model`: str  
     - One of `poisson` or `gaussian`  
     - Should use the same value passed to `decoder_observation_model` when initializing `PiVAE`.  
