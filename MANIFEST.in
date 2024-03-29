@@ -1,0 +1,2 @@
+exclude _config.yml
+prune .github/
