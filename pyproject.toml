@@ -12,7 +12,7 @@ authors = [
 maintainers = [
     {name = "Marlan McInnes-Taylor", email = "mmcinnestaylor@gmail.com"}
 ]
-description = "A variational auto encoder used to construct latent variable models of neural activity while simultaneously modeling the relation between the latent and task variables."
+description = "A Pytorch implementation of Poisson Identifiable VAE (pi-VAE), a variational auto encoder used to construct latent variable models of neural activity while simultaneously modeling the relation between the latent and task variables."
 readme = "README.md"
 keywords = [
     "vae",
