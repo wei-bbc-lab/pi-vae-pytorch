@@ -60,12 +60,12 @@ class GINFlowDecoder(nn.Module):
             layers.append(PermutationLayer(x_dim))
             layers.append(
                 GINBlock(
-                        x_dim=x_dim,
-                        n_affine_layers=gin_block_depth,
-                        affine_input_layer_slice_dim=affine_input_layer_slice_dim,
-                        affine_n_hidden_layers=affine_n_hidden_layers,
-                        affine_hidden_layer_dim=affine_hidden_layer_dim,
-                        affine_hidden_layer_activation=affine_hidden_layer_activation
+                    x_dim=x_dim,
+                    n_affine_layers=gin_block_depth,
+                    affine_input_layer_slice_dim=affine_input_layer_slice_dim,
+                    affine_n_hidden_layers=affine_n_hidden_layers,
+                    affine_hidden_layer_dim=affine_hidden_layer_dim,
+                    affine_hidden_layer_activation=affine_hidden_layer_activation
                 )
             )
 

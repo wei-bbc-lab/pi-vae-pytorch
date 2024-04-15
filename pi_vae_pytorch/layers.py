@@ -3,8 +3,6 @@ from typing import Tuple
 import torch
 from torch import nn, Tensor
 
-from pi_vae_pytorch.utils import build_mlp_layers
-
 
 class MLP(nn.Module):
     """
@@ -29,20 +27,25 @@ class MLP(nn.Module):
         ) -> None:
         super().__init__()
 
-        self.net = nn.ModuleList([])
-
         # Construct layer dims
         dims = [in_features]
         for _ in range(n_hidden_layers * 2):
             dims.append(hidden_layer_features)
         dims.append(out_features)
 
-        # Construct MLP
-        self.net = build_mlp_layers(
-            n_hidden_layers=n_hidden_layers,
-            hidden_layer_dims=dims,
-            activation=activation
-        )
+        # Build layers
+        layers = []
+        act = activation
+
+        for i in range(n_hidden_layers+1):
+            # Output layer
+            if i == n_hidden_layers:
+                act = nn.Identity
+            
+            layers.append(nn.Linear(dims[2*i], dims[2*i+1]))
+            layers.append(act())
+
+        self.net = nn.Sequential(*layers)
 
     def forward(
         self,
@@ -174,7 +177,7 @@ class AffineCouplingLayer(nn.Module):
 
         # Compute slice dimension
         if x_slice_dim is None:
-            self.slice_dim = self.x_dim // 2
+            self.slice_dim = x_dim // 2
         else:
             if x_slice_dim >= x_dim:
                 raise ValueError(f"x_slice_dim must be less than x_dim.")
@@ -206,7 +209,7 @@ class AffineCouplingLayer(nn.Module):
         x_1 = torch.narrow(x, 1, 0, self.slice_dim)
         x_2 = torch.narrow(x, 1, self.slice_dim, self.x_dim - self.slice_dim)
 
-        # Compute scale and transla
+        # Compute scale and translation
         s_t = self.net(x_1)
         s_out = torch.narrow(s_t, 1, 0, self.x_dim - self.slice_dim - 1)
         t_out = torch.narrow(s_t, 1, self.x_dim - self.slice_dim - 1, self.x_dim - self.slice_dim)
@@ -306,7 +309,7 @@ class ZPriorContinuous(nn.Module):
     
     def forward(
         self,
-        u: torch.Tensor
+        u: Tensor
         ) -> Tuple[Tensor, Tensor]:
         """
         Maps u to mean and log of variance of p(z|u).
@@ -346,7 +349,7 @@ class ZPriorDiscrete(nn.Module):
 
     def forward(
         self,
-        u: torch.Tensor
+        u: Tensor
         ) -> Tuple[Tensor, Tensor]:
         """
         Maps u to mean and log of variance of p(z|u).

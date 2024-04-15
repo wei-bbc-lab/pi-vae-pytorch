@@ -1,11 +1,12 @@
 from typing import Dict
 
-from torch import clamp, nn, Tensor
+import torch
+from torch import nn, Tensor
 
 from pi_vae_pytorch.decoders import GINFlowDecoder
 from pi_vae_pytorch.encoders import MLPEncoder
 from pi_vae_pytorch.layers import ZPriorContinuous, ZPriorDiscrete
-from pi_vae_pytorch.utils import compute_posterior, generate_latent_z
+from pi_vae_pytorch.utils import compute_posterior
 
 
 class PiVAE(nn.Module):
@@ -41,9 +42,10 @@ class PiVAE(nn.Module):
     Notes
     -----
     decoder_affine_input_layer_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < decoder_affine_input_layer_slice_dim < x_dim.
-    decoder_affine_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(affine_hidden_layer_dim, x_dim // 4).
-    decoder_nflow_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(nflow_hidden_layer_dim, x_dim // 4).
+    decoder_affine_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(decoder_affine_hidden_layer_dim, x_dim // 4).
+    decoder_nflow_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(decoder_nflow_hidden_layer_dim, x_dim // 4).
     """
+    
     def __init__(
         self,
         x_dim: int,
@@ -82,6 +84,8 @@ class PiVAE(nn.Module):
         else:
             raise ValueError(f"Invalid observation model: {decoder_observation_model}")
         
+        self.decoder_observation_model = decoder_observation_model
+        
         self.decoder = GINFlowDecoder(
             x_dim=x_dim,
             z_dim=z_dim,
@@ -97,9 +101,12 @@ class PiVAE(nn.Module):
             observation_model=decoder_observation_model
         )
 
-        self.decoder_fr_clamp_min = decoder_fr_clamp_min
-        self.decoder_fr_clamp_max = decoder_fr_clamp_max
-        self.decoder_observation_model = decoder_observation_model
+        if decoder_fr_clamp_min < decoder_fr_clamp_max:
+            self.decoder_fr_clamp_min = decoder_fr_clamp_min
+            self.decoder_fr_clamp_max = decoder_fr_clamp_max
+        else:
+            raise ValueError(f"decoder_fr_clamp_min: {decoder_fr_clamp_min} must be less than decoder_fr_clamp_max: {decoder_fr_clamp_max}")
+        
         
         self.encoder = MLPEncoder(
             x_dim=x_dim,
@@ -139,15 +146,12 @@ class PiVAE(nn.Module):
         posterior_mean, posterior_log_variance = compute_posterior(z_mean, z_log_variance, lambda_mean, lambda_log_variance)  
 
         # Sample latent z using reparameterization trick
-        z_sample = generate_latent_z(
-            mean=posterior_mean,
-            log_variance=posterior_log_variance
-        )  
+        z_sample = posterior_mean + torch.exp(0.5 * posterior_log_variance) * torch.randn_like(posterior_mean)
 
         # Generate firing rate using sampled latent z
         firing_rate = self.decoder(z_sample)
         if self.decoder_observation_model == "poisson":
-            firing_rate = clamp(firing_rate, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
+            firing_rate = torch.clamp(firing_rate, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
 
         return {
             "firing_rate": firing_rate,
