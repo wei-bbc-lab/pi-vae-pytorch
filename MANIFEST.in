@@ -1,2 +1,4 @@
 exclude _config.yml
 prune .github/
+prune examples/
+prune tests/
