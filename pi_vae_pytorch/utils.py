@@ -10,7 +10,8 @@ def compute_loss(
     posterior_mean: Tensor, 
     posterior_log_variance: Tensor,
     observation_model: str,
-    observation_noise_model: nn.Module = None
+    observation_noise_model: nn.Module = None,
+    device: torch.device = None
     ) -> Tensor:
     """ 
     pi-VAE Loss function
@@ -24,7 +25,8 @@ def compute_loss(
     posterior_mean (Tensor) - means from posterior q(z|x,u)~q(z|x)p(z|u). Size([n_samples. z_dim])
     posterior_log_variance (Tensor) - log of variances from posterior q(z|x,u)~q(z|x)p(z|u). Size([n_samples, z_dim])
     observation_model (str) - poisson or gaussian
-    observation_noise_model (nn.Module) - if gaussian observation model, set the observation noise level as different real numbers. Default: None 
+    observation_noise_model (nn.Module) - if gaussian observation model, set the observation noise level as different real numbers. Default: None
+    device (torch.device) - object representing the device on which a Tensor will be allocated. Default: None 
     
     Returns
     -------
@@ -45,10 +47,10 @@ def compute_loss(
     if observation_model == "poisson":
         observation_log_liklihood = torch.sum(firing_rate - x * torch.log(firing_rate), -1)
     elif observation_model == "gaussian":
-        observation_log_variance = observation_noise_model(torch.ones((1, 1)))
+        observation_log_variance = observation_noise_model(torch.ones(size=(1, 1), device=device))
         observation_log_liklihood = torch.sum(torch.square(firing_rate - x) / (2 * torch.exp(observation_log_variance)) + (observation_log_variance / 2), -1)
     else:
-        raise ValueError(f"Invalid observation model: {observation_model}")
+        raise ValueError(f"Invalid observation_model: {observation_model}")
 
     loss = 1 + posterior_log_variance - lambda_log_variance - ((torch.square(posterior_mean - lambda_mean) + torch.exp(posterior_log_variance)) / torch.exp(lambda_log_variance))
     kl_loss = 0.5 * torch.sum(loss, dim=-1)

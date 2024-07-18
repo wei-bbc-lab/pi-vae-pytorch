@@ -212,7 +212,7 @@ pi-VAE learns the deep generative model and the approximate posterior q(z \| x, 
 ### Poisson observation model
 
 ```
-from pi_vae_pytorch.utils import compute_loss
+from pi_vae_pytorch import compute_loss
 
 outputs = model(x, u) # Initialized with decoder_observation_model="poisson" 
 
@@ -232,9 +232,13 @@ loss.backward()
 ### Gaussian observation model
 
 ```
-from pi_vae_pytorch.utils import compute_loss
+from pi_vae_pytorch import compute_loss
 
-outputs = model(x, u) # Initialized with decoder_observation_model="gaussian" 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+model = model.to(device) # Initialized with decoder_observation_model="gaussian" 
+
+outputs = model(x, u) 
 
 loss = compute_loss(
     x=x,
@@ -244,7 +248,8 @@ loss = compute_loss(
     posterior_mean=outputs["posterior_mean"],
     posterior_log_variance=outputs["posterior_log_variance"],
     observation_model=model.decoder_observation_model,
-    observation_noise_model=model.observation_noise_model
+    observation_noise_model=model.observation_noise_model,
+    device=device
 )
 
 loss.backward()
@@ -269,11 +274,11 @@ loss.backward()
     
     Log of variances from label prior p(z \| u). 
 - `posterior_mean`: Tensor 
-    - Size([n_samples. z_dim])  
+    - Size([n_samples, z_dim])  
     
     Means from full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u). 
 - `posterior_log_variance`: Tensor 
-    - Size([n_samples. z_dim])  
+    - Size([n_samples, z_dim])  
     
     Log of variances from full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u).
 - `observation_model`: str  
@@ -283,9 +288,14 @@ loss.backward()
     The observation model used by pi-VAE's decoder.
 - `observation_noise_model`: nn.Module 
     - Default: None  
-    - Only applied when `observation model="gaussian"`  
+    - Only applied when `observation_model="gaussian"`  
     
     The noise model used when pi-VAE's decoder utilizes a Gaussian observation model. When `PiVAE` is initialized with `decoder_observation_model="gaussian"`, the model's `observation_noise_model` attribute should be used.
+- `device`: torch.device  
+    - Default: None (uses the current device for the default tensor type)  
+    - Only applied when `observation_model="gaussian"`  
+
+    An object representing the device on which a `torch.Tensor` will be allocated. Allows for loss computations on devices other than a CPU.  
 
 ## Citation
 

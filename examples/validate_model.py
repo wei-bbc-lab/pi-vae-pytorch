@@ -9,8 +9,7 @@ from tqdm.auto import tqdm
 from typing import Tuple
 import seaborn as sns
 from pytorch_model_summary import summary
-from pi_vae_pytorch import PiVAE
-from pi_vae_pytorch.utils import compute_loss
+from pi_vae_pytorch import PiVAE, compute_loss
 
 
 #############################################
@@ -365,7 +364,8 @@ for epoch in pbar:
             lambda_log_variance=outputs["lambda_log_variance"],
             posterior_mean=outputs["posterior_mean"],
             posterior_log_variance=outputs["posterior_log_variance"],
-            observation_model="poisson"
+            observation_model="poisson",
+            device=device
         )
         loss.backward()
         optimizer.step()
@@ -387,7 +387,8 @@ for epoch in pbar:
                     lambda_log_variance=outputs["lambda_log_variance"],
                     posterior_mean=outputs["posterior_mean"],
                     posterior_log_variance=outputs["posterior_log_variance"],
-                    observation_model="poisson"
+                    observation_model="poisson",
+                    device=device
                 )
                 valid_loss += loss.item() / n_valid
             
