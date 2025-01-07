@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from typing import Tuple
 import seaborn as sns
 from pytorch_model_summary import summary
-from pi_vae_pytorch import PiVAE, compute_loss
+from pi_vae_pytorch import PiVAE, ELBOLoss
 
 
 #############################################
@@ -338,6 +338,8 @@ else:
 
 optimizer = torch.optim.Adam(params=vae.parameters(), lr=learning_rate)
 
+loss_fn = ELBOLoss()
+
 
 """
 Train model
@@ -357,15 +359,13 @@ for epoch in pbar:
         optimizer.zero_grad()
         x, u = x_train[batch], u_train[batch]
         outputs = vae(x, u)
-        loss = compute_loss(
+        loss = loss_fn(
             x=x,
             firing_rate=outputs["firing_rate"],
             lambda_mean=outputs["lambda_mean"],
             lambda_log_variance=outputs["lambda_log_variance"],
             posterior_mean=outputs["posterior_mean"],
-            posterior_log_variance=outputs["posterior_log_variance"],
-            observation_model="poisson",
-            device=device
+            posterior_log_variance=outputs["posterior_log_variance"]
         )
         loss.backward()
         optimizer.step()
@@ -380,15 +380,13 @@ for epoch in pbar:
             for i in range(n_valid):
                 x, u = x_valid[i], u_valid[i]
                 outputs = vae(x, u)
-                loss = compute_loss(
+                loss = loss_fn(
                     x=x,
                     firing_rate=outputs["firing_rate"],
                     lambda_mean=outputs["lambda_mean"],
                     lambda_log_variance=outputs["lambda_log_variance"],
                     posterior_mean=outputs["posterior_mean"],
-                    posterior_log_variance=outputs["posterior_log_variance"],
-                    observation_model="poisson",
-                    device=device
+                    posterior_log_variance=outputs["posterior_log_variance"]
                 )
                 valid_loss += loss.item() / n_valid
             
