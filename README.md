@@ -57,27 +57,7 @@ This module is comprised of a MLP which maps `z` to the concatenation of `z` and
 
 Outputs from the `NFlowLayer` are passed to a series of `GINBlock` modules. Each `GINBlock` is comprised of a specified number of `AffineCouplingLayer` modules. Each `AffineCouplingLayer` is comprised of a MLP and performs an affine coupling transformation.
 
-## Usage
-
-```
-import torch
-from pi_vae_pytorch import PiVAE
-
-model = PiVAE(
-    x_dim = 100,
-    u_dim = 3,
-    z_dim = 2,
-    discrete_labels=False
-)
-
-x = torch.randn(1, 100) # Size([n_samples, x_dim])
-
-u = torch.randn(1, 3) # Size([n_samples, u_dim])
-
-outputs = model(x, u) # Dict
-```
-
-### Parameters
+## Initialization
 
 - `x_dim`: int  
     Dimension of observation `x`
@@ -168,7 +148,27 @@ outputs = model(x, u) # Dict
 
     Activation function applied to the outputs of each hidden layer in the MLP of the label prior estimator module. 
 
-### Returns
+## Basic operation
+
+```
+import torch
+from pi_vae_pytorch import PiVAE
+
+model = PiVAE(
+    x_dim = 100,
+    u_dim = 3,
+    z_dim = 2,
+    discrete_labels=False
+)
+
+x = torch.randn(1, 100) # Size([n_samples, x_dim])
+
+u = torch.randn(1, 3) # Size([n_samples, u_dim])
+
+outputs = model(x, u) # Dict
+```
+
+### Output
 
 A `Dict` with the following items. 
 
@@ -307,7 +307,34 @@ loss = loss_fn(
 loss.backward()
 ```
 
+## Class methods
 
+- `sample(u, n_samples=1, device=None)`  
+    Generates random samples in the model's observation dimension (`x_dim`). Samples are initially drawn from a Gaussian distribution in the model's latent dimension (`z_dim`) corresponding to specified label `u`. Samples are subsequently lifted to the model's observation dimension (`x_dim`) by passing them through the model's decoder.  
+    **Parameters**  
+    - `u`: *int, float, list, tuple, or Tensor of shape(1, u_dim)*  
+        Label of the samples to generate. An integer is expected in the discrete label regime, while a float, list, tuple or Pytorch Tensor is expected in the continuous label regime.  
+    - `n_samples`: *int, default=1*  
+        Number of samples to generate.  
+    - `device`: *torch.device, default=None*  
+        Pytorch [device](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) on which the model currently resides. A value of `None` may be used when utilizing the default device.   
+    
+    **Returns**  
+    - `samples`: *Tensor of shape(n_samples, x_dim)*  
+        Randomly generated sample(s).  
+- `sample_z(u, n_samples=1, device=None)`  
+    Generates random samples in the model's latent dimension (`z_dim`). Samples are drawn from a Gaussian distribution corresponding to specified label `u`.  
+    **Parameters**  
+    - `u`: *int, float, list, tuple, or Tensor of shape(1, u_dim)*  
+        Label of the samples to generate. An integer is expected in the discrete label regime, while a float, list, tuple or Pytorch Tensor is expected in the continuous label regime.  
+    - `n_samples`: *int, default=1*  
+        Number of samples to generate.  
+    - `device`: *torch.device, default=None*  
+        Pytorch [device](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) on which the model currently resides. A value of `None` may be used when utilizing the default device.  
+    
+    **Returns**  
+    - `samples`: *Tensor of shape(n_samples, z_dim)*  
+        Randomly generated sample(s).  
 
 ## Citation
 

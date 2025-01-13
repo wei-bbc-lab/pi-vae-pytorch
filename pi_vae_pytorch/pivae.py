@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 
 import torch
 from torch import nn, Tensor
@@ -163,3 +163,101 @@ class PiVAE(nn.Module):
             "z_log_variance": z_log_variance,
             "z_sample": z_sample
         }
+
+    def sample(
+        self,
+        u: Union[float, int, list, tuple, torch.Tensor],
+        n_samples: int = 1,
+        device: torch.device = None
+        ) -> torch.Tensor:
+        """
+        Generates samples in the model's x dimension using a specified label u.
+
+        Parameters
+        ----------
+        - u (int, float, list, tuple, or Tensor) - the label of the generated samples
+        - n_samples (int) - the number of samples to generate
+        - device (torch.device) - the torch device on which the model resides
+
+        Returns
+        -------
+        samples (Tensor) - the generated samples corresponding to the specified label. Size([n_samples, x_dim]) 
+        """
+        with torch.no_grad():
+            if isinstance(u, int): # discrete label
+                u = torch.as_tensor([u], device=device)
+            elif isinstance(u, float): # continuous label
+                u = torch.as_tensor([u], device=device).unsqueeze(dim=0)
+            elif isinstance(u, list) or isinstance(u, tuple): # continuous label
+                u = torch.as_tensor(u, dtype=torch.float, device=device).unsqueeze(dim=0)
+            
+            # Mean and log of variance of label u
+            mean, log_variance = self.z_prior(u)
+
+            # Create covariance matrix
+            variance = torch.exp(log_variance).squeeze(dim=0)
+            covar = torch.eye(mean.size(dim=1), device=device) # N x N
+
+            # Update diagonal with variances
+            for idx in range(mean.size(dim=1)):
+                covar[idx, idx] = variance[idx].item()
+
+            # Create distribution used for sampling
+            distribution = torch.distributions.multivariate_normal.MultivariateNormal(mean, covar)
+            
+            # Generate z samples
+            samples = distribution.sample((n_samples,))
+            samples = samples.squeeze(dim=1)
+
+            # Lift samples to x dimension
+            samples = self.decoder(samples)                                 
+
+        return samples
+
+    def sample_z(
+        self,
+        u: Union[float, int, list, tuple, torch.Tensor],
+        n_samples: int = 1,
+        device: torch.device = None
+        ) -> torch.Tensor:
+        """
+        Generates samples in the model's z dimension using a specified label u.
+
+        Parameters
+        ----------
+        - u (int, float, list, tuple, or Tensor) - the label of the generated samples
+        - n_samples (int) - the number of samples to generate
+        - device (torch.device) - the torch device on which the model resides
+
+        Returns
+        -------
+        samples (Tensor) - the generated samples corresponding to the specified label. Size([n_samples, z_dim]) 
+        """
+
+        with torch.no_grad():
+            if isinstance(u, int): # discrete label
+                u = torch.as_tensor([u], device=device)
+            elif isinstance(u, float): # continuous label
+                u = torch.as_tensor([u], device=device).unsqueeze(dim=0)
+            elif isinstance(u, list) or isinstance(u, tuple): # continuous label
+                u = torch.as_tensor(u, dtype=torch.float, device=device).unsqueeze(dim=0)
+
+            # Mean and log of variance of label u
+            mean, log_variance = self.z_prior(u)
+
+            # Create covariance matrix
+            variance = torch.exp(log_variance).squeeze(dim=0)
+            covar = torch.eye(mean.size(dim=1), device=device) # N x N
+
+            # Update diagonal with variances
+            for idx in range(mean.size(dim=1)):
+                covar[idx, idx] = variance[idx].item()
+
+            # Create distribution used for sampling
+            distribution = torch.distributions.multivariate_normal.MultivariateNormal(mean, covar)
+                
+            # Generate z samples
+            samples = distribution.sample((n_samples,))
+            samples = samples.squeeze(dim=1)                          
+
+        return samples
