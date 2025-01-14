@@ -309,6 +309,43 @@ loss.backward()
 
 ## Class methods
 
+- `decode(X)`  
+    Projects samples in the model's latent space (`z_dim`) into the model's observation space (`x_dim`) by passing them through the model's decoder module.  
+    **Parameters**  
+    - `X`: *Tensor of shape(n_samples, z_dim)*  
+        Samples to be projected into the model's observation space.  
+    
+    **Returns**  
+    - `decoded`: *Tensor of shape(n_samples, x_dim)*  
+        Samples projected into the model's observation space.  
+- `encode(X, return_stats=False)`  
+    Projects samples in the model's observation space (`x_dim`) into the model's latent space (`z_dim`) by passing them through the model's encoder module.  
+    **Parameters**  
+    - `X`: *Tensor of shape(n_samples, x_dim)*  
+        Samples to be projected into the model's observation space.  
+    - `return_stats`: *bool, default=False*  
+        If `True`, the mean and log of the variance associated with the encoded sample are returned; otherwise only the encoded sample is returned.  
+    
+    **Returns**  
+    - `encoded`: *Tensor of shape(n_samples, z_dim)*  
+        Samples projected into the model's latent space.  
+    - `encoded_mean`: *Tensor of shape(n_samples, z_dim), optional*  
+        Mean associated with a projected sample.  
+    - `encoded_log_variance`: *Tensor of shape(n_samples, z_dim), optional*  
+        Log of the variances associated with a projected sample.  
+- `get_label_statistics(u, device=None)`  
+    Returns the mean and log of the variance associated with a label `u` using the label prior estimator of p(z \| u).  
+    **Parameters**  
+    - `u`: *int, float, list, tuple, or Tensor of shape(1, u_dim)*  
+        Label whose statictics will be returned. An integer is expected in the discrete label regime, while a float, list, tuple or Pytorch Tensor is expected in the continuous label regime.    
+    - `device`: *torch.device, default=None*  
+        Pytorch [device](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) on which the model currently resides. A value of `None` may be used when utilizing the default device.  
+    
+    **Returns**  
+    - `label_mean`: *Tensor of shape(1, z_dim)*  
+        Mean of label `u`.  
+    - `label_log_variance`: *Tensor of shape(1, z_dim)*  
+        Log of the variance of label `u`.  
 - `sample(u, n_samples=1, device=None)`  
     Generates random samples in the model's observation dimension (`x_dim`). Samples are initially drawn from a Gaussian distribution in the model's latent dimension (`z_dim`) corresponding to specified label `u`. Samples are subsequently lifted to the model's observation dimension (`x_dim`) by passing them through the model's decoder.  
     **Parameters**  

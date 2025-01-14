@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 
 import torch
 from torch import nn, Tensor
@@ -164,11 +164,97 @@ class PiVAE(nn.Module):
             "z_sample": z_sample
         }
 
+    def decode(
+        self,
+        X: torch.Tensor
+        ) -> torch.Tensor:
+        """
+        Projects samples in the model's latent space (`z_dim`) into the model's observation space (`x_dim`) by passing them through the model's decoder module.
+
+        Parameters
+        ----------
+        `X` (Tensor) - sample(s) the model's latent space (`z_dim`) to be decoded. `Size([n_samples, z_dim])`
+
+        Returns
+        -------
+        `decoded` (Tensor) - sample(s) in the model's observation space (`x_dim`). `Size([n_samples, x_dim])` 
+        """
+
+        with torch.no_grad():
+            decoded = self.decoder(X)
+
+            if self.decoder_observation_model == 'poisson':
+                decoded = torch.clamp(decoded, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
+
+        return decoded
+
+    def encode(
+        self,
+        X: torch.Tensor,
+        return_stats: bool = False
+        ) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+        """
+        Projects samples in the model's observation space (`x_dim`) into the model's latent space (`z_dim`) by passing them through the model's encoder module.
+
+        Parameters
+        ----------
+        - `X` (Tensor) - the sample(s) in the model's observation space (`x_dim`) to be encoded. `Size([n_samples, x_dim])`
+        - `return_stats` (bool) - if `True`, the mean and log of variance associated with the encoded sample are returned; otherwise only the encoded sample is returned.
+
+        Returns
+        -------
+        - `encoded` (Tensor) - sample(s) in the model's latent space(`z_dim`). `Size([n_samples, z_dim])`
+        - `encoded_mean` (Tensor) [optional] - mean(s) of the encoded sample(s). `Size([n_samples, z_dim])`
+        - `encoded_log_variance` (Tensor) [optional] - log of variance(s) of the encoded sample(s). `Size([n_samples, z_dim])`
+        """
+
+        with torch.no_grad():
+            encoded_mean, encoded_log_variance = self.encoder(X)
+            # Sample latent z using reparameterization trick
+            encoded = encoded_mean + torch.exp(0.5 * encoded_log_variance) * torch.randn_like(encoded_mean)
+
+        if return_stats:
+            return encoded, encoded_mean, encoded_log_variance
+        else:
+            return encoded
+
+    def get_label_statistics(
+        self,
+        u: Union[float, int, list, tuple, torch.Tensor],
+        device: Optional[torch.device] = None
+        ) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Returns the mean and log of the variance associated with label `u`.
+
+        Parameters
+        ----------
+        - `u` (int, float, list, tuple, or Tensor) - the label of the generated samples
+        - `device` (torch.device) - the torch device on which the model resides
+
+        Returns
+        -------
+        - `label_mean` (Tensor) - mean associated with the specified label. `Size([1, z_dim])`
+        - `label_log_variance` (Tensor) - log of the variance associated with  the specified label. `Size([1, z_dim])`
+        """
+
+        with torch.no_grad():
+            if isinstance(u, int): # discrete label
+                u = torch.as_tensor([u], device=device)
+            elif isinstance(u, float): # continuous label
+                u = torch.as_tensor([u], device=device).unsqueeze(dim=0)
+            elif isinstance(u, list) or isinstance(u, tuple): # continuous label
+                u = torch.as_tensor(u, dtype=torch.float, device=device).unsqueeze(dim=0)
+
+            # Mean and log of variance of label u using label prior estimator of p(z|u)
+            label_mean, label_log_variance = self.z_prior(u) 
+        
+        return label_mean, label_log_variance
+    
     def sample(
         self,
         u: Union[float, int, list, tuple, torch.Tensor],
         n_samples: int = 1,
-        device: torch.device = None
+        device: Optional[torch.device] = None
         ) -> torch.Tensor:
         """
         Generates samples in the model's x dimension using a specified label u.
@@ -218,7 +304,7 @@ class PiVAE(nn.Module):
         self,
         u: Union[float, int, list, tuple, torch.Tensor],
         n_samples: int = 1,
-        device: torch.device = None
+        device: Optional[torch.device] = None
         ) -> torch.Tensor:
         """
         Generates samples in the model's z dimension using a specified label u.
