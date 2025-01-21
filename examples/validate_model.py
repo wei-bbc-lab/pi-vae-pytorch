@@ -361,7 +361,7 @@ for epoch in pbar:
         outputs = vae(x, u)
         loss = loss_fn(
             x=x,
-            firing_rate=outputs["firing_rate"],
+            firing_rate=outputs["posterior_firing_rate"],
             lambda_mean=outputs["lambda_mean"],
             lambda_log_variance=outputs["lambda_log_variance"],
             posterior_mean=outputs["posterior_mean"],
@@ -382,7 +382,7 @@ for epoch in pbar:
                 outputs = vae(x, u)
                 loss = loss_fn(
                     x=x,
-                    firing_rate=outputs["firing_rate"],
+                    firing_rate=outputs["posterior_firing_rate"],
                     lambda_mean=outputs["lambda_mean"],
                     lambda_log_variance=outputs["lambda_log_variance"],
                     posterior_mean=outputs["posterior_mean"],
@@ -417,8 +417,8 @@ with torch.no_grad():
     post_log_vars = outputs["posterior_log_variance"]
     post_lam_means = outputs["lambda_mean"]
     post_lam_log_vars = outputs["lambda_log_variance"]
-    z_means = outputs["z_mean"]
-    z_log_vars = outputs["z_log_variance"]
+    z_means = outputs["encoder_z_mean"]
+    z_log_vars = outputs["encoder_z_log_variance"]
 
 post_means = post_means.cpu()
 z_means = z_means.cpu()

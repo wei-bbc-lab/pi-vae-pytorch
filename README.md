@@ -150,6 +150,62 @@ Outputs from the `NFlowLayer` are passed to a series of `GINBlock` modules. Each
 
 ## Basic operation
 
+### Inputs
+
+- **x**: *Tensor of shape(n_samples, x_dim)*  
+    Samples in the model's observation space.  
+- **u**: *Tensor*  
+    - *shape(n_samples)* when using discrete labels
+    - *shape(n_samples, u_dim)* when using continuous labels  
+    
+    Label corresponding to each sample. This parameter is not used when the model is in inference mode.  
+
+### Outputs
+
+A `dict` with the following items: 
+
+- **encoder_firing_rate**: *Tensor of shape(n_samples, x_dim)*  
+    Predicted firing rate of `encoder_z_sample`.  
+
+- **encoder_z_sample**: *Tensor of shape(n_samples, z_dim)*  
+    Latent space representation of each input sample computed from the encoder module's approximation of q(z \| x).  
+
+- **encoder_z_mean**: *Tensor of shape(n_samples, z_dim)*  
+    Mean of each input sample using the encoder module's approximation of q(z \| x).  
+
+- **encoder_z_log_variance**: *Tensor of shape(n_samples, z_dim)*  
+    Log of variance of each input sample using the encoder module's approximation of q(z \| x).  
+
+- **lambda_mean**: *Tensor of shape(n_samples, z_dim)*  
+    Mean of each input sample using the label prior module's approximation of p(z \| u).  
+
+- **lambda_log_variance**: *Tensor of shape(n_samples, z_dim)*  
+    Log of variance of input each sample using the label prior module's approximation of p(z \| u).  
+
+- **posterior_firing_rate**: *Tensor of shape(n_samples, x_dim)*  
+    Predicted firing rate of `posterior_z_sample`.  
+
+- **posterior_z_sample**: *Tensor of shape(n_samples, z_dim)*      
+    Latent space representation of each input sample computed from the approximation of full posterior q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
+
+- **posterior_mean**: *Tensor of shape(n_samples, z_dim)*  
+    Mean of each input sample using the approximation of full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
+
+- **posterior_log_variance**: *Tensor of shape(n_samples, z_dim)*  
+    Log of variance of each input sample using the approximation of full posterior q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
+
+#### Inference Mode
+
+A `dict` with the following items:  
+
+- **encoder_firing_rate**: *Tensor of shape(n_samples, x_dim)*  
+- **encoder_z_sample**: *Tensor of shape(n_samples, z_dim)*  
+- **encoder_z_mean**: *Tensor of shape(n_samples, z_dim)*  
+- **encoder_z_log_variance**: *Tensor of shape(n_samples, z_dim)*  
+
+### Examples
+
+#### Continuous Labels
 ```
 import torch
 from pi_vae_pytorch import PiVAE
@@ -165,47 +221,30 @@ x = torch.randn(1, 100) # Size([n_samples, x_dim])
 
 u = torch.randn(1, 3) # Size([n_samples, u_dim])
 
-outputs = model(x, u) # Dict
+outputs = model(x, u) # dict
 ```
 
-### Output
+#### Discrete Labels
 
-A `Dict` with the following items. 
+```
+import torch
+from pi_vae_pytorch import PiVAE
 
-- `firing_rate`: Tensor   
-    - Size([n_samples, x_dim])  
+model = PiVAE(
+    x_dim = 100,
+    u_dim = 3,
+    z_dim = 2,
+    discrete_labels=True
+)
 
-    Predicted firing rates of `z_sample`. 
-- `lambda_mean`: Tensor  
-    - Size([n_samples, z_dim])  
+x = torch.randn(1, 100) # Size([n_samples, x_dim])
 
-    Mean for each sample using label prior p(z \| u). 
-- `lambda_log_variance`: Tensor  
-    - Size([n_samples, z_dim])  
-    
-    Log of variance for each sample using label prior p(z \| u). 
-- `posterior_mean`: Tensor  
-    - Size([n_samples, z_dim])  
+u = torch.randint(u_dim, (1,)) # Size([n_samples])
 
-    Mean for each sample using full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u). 
-- `posterior_log_variance`: Tensor  
-    - Size([n_samples, z_dim])  
+outputs = model(x, u) # dict
+```
 
-    Log of variance for each sample using full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u). 
-- `z_mean`: Tensor  
-    - Size([n_samples, z_dim])  
-
-    Mean for each sample using approximation of q(z \| x). 
-- `z_log_variance`: Tensor  
-    - Size([n_samples, z_dim])  
-
-    Log of variance for each sample using approximation of q(z \| x). 
-- `z_sample`: Tensor  
-    - Size([n_samples, z_dim])  
-    
-    Generated latents `z`. 
-
-## Loss Function - `ELBOLoss`
+## Loss Function - ELBOLoss
 
 pi-VAE learns the deep generative model and the approximate posterior q(z \| x, u) of the true posterior p(z \| x, u) by maximizing the evidence lower bound (ELBO) of p(x \| u). This loss function is implemented in the included `ELBOLoss` class.
 
@@ -372,6 +411,14 @@ loss.backward()
     **Returns**  
     - `samples`: *Tensor of shape(n_samples, z_dim)*  
         Randomly generated sample(s).  
+- `set_inference_mode(state)`  
+    Toggles the model's inference state flag. When `True`, the model's `forward` method does not utilize the `u` parameter. When `False`,  the `u` parameter is utilized. Useful for working with unlabeled data. *NOTE: Inference mode must be disabled during model training.*  
+    **Parameters**  
+    - **state**: *bool*  
+        The desired inference state.  
+    
+    **Returns**  
+    - None  
 
 ## Citation
 

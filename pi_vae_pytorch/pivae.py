@@ -1,7 +1,7 @@
-from typing import Dict, Union, Optional
+from typing import Union, Optional
 
 import torch
-from torch import nn, Tensor
+from torch import nn
 
 from pi_vae_pytorch.decoders import GINFlowDecoder
 from pi_vae_pytorch.encoders import MLPEncoder
@@ -130,39 +130,61 @@ class PiVAE(nn.Module):
                 hidden_layer_activation=z_prior_hidden_layer_activation
             )
 
+        self.inference = False
+
     def forward(
         self,
-        x: Tensor,
-        u: Tensor
-        ) -> Dict[str, Tensor]:
+        x: torch.Tensor,
+        u: Optional[torch.Tensor] = None
+        ) -> dict[str, torch.Tensor]:
+
+        # Encode each sample observation x to latent z approximating q(z|x)
+        encoder_z_mean, encoder_z_log_variance = self.encoder(x)
+
+        with torch.no_grad():
+            # Sample latent z using reparameterization trick
+            encoder_z_sample = encoder_z_mean + torch.exp(0.5 * encoder_z_log_variance) * torch.randn_like(encoder_z_mean)
+
+            # Generate firing rate using sampled latent z
+            encoder_firing_rate = self.decoder(encoder_z_sample)
+
+            if self.decoder_observation_model == 'poisson':
+                encoder_firing_rate = torch.clamp(encoder_firing_rate, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
         
-        # Mean and log of variance for each sample using label prior p(z|u)
-        lambda_mean, lambda_log_variance = self.z_prior(u) 
+        if self.inference:
+            return {
+                'encoder_firing_rate': encoder_firing_rate,
+                'encoder_z_sample': encoder_z_sample,
+                'encoder_z_mean': encoder_z_mean,
+                'encoder_z_log_variance': encoder_z_log_variance                
+            }
+        else:
+            # Mean and log of variance for each sample using label prior p(z|u)
+            lambda_mean, lambda_log_variance = self.z_prior(u)
 
-        # Map each sample observation x to latent z approximating q(z|x)
-        z_mean, z_log_variance = self.encoder(x)  
+            # Compute the full posterior of q(z|x,u)~q(z|x)p(z|u) as a product of Gaussians
+            posterior_mean, posterior_log_variance = compute_posterior(encoder_z_mean, encoder_z_log_variance, lambda_mean, lambda_log_variance)  
 
-        # Compute the full posterior of q(z|x,u)~q(z|x)p(z|u) as a product of Gaussians
-        posterior_mean, posterior_log_variance = compute_posterior(z_mean, z_log_variance, lambda_mean, lambda_log_variance)  
+            # Sample latent z using reparameterization trick
+            posterior_z_sample = posterior_mean + torch.exp(0.5 * posterior_log_variance) * torch.randn_like(posterior_mean)
 
-        # Sample latent z using reparameterization trick
-        z_sample = posterior_mean + torch.exp(0.5 * posterior_log_variance) * torch.randn_like(posterior_mean)
+            # Generate firing rate using sampled latent z
+            posterior_firing_rate = self.decoder(posterior_z_sample)
+            if self.decoder_observation_model == 'poisson':
+                posterior_firing_rate = torch.clamp(posterior_firing_rate, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
 
-        # Generate firing rate using sampled latent z
-        firing_rate = self.decoder(z_sample)
-        if self.decoder_observation_model == "poisson":
-            firing_rate = torch.clamp(firing_rate, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
-
-        return {
-            "firing_rate": firing_rate,
-            "lambda_mean": lambda_mean,
-            "lambda_log_variance": lambda_log_variance,
-            "posterior_mean": posterior_mean,
-            "posterior_log_variance": posterior_log_variance,
-            "z_mean": z_mean,
-            "z_log_variance": z_log_variance,
-            "z_sample": z_sample
-        }
+            return {
+                'encoder_firing_rate': encoder_firing_rate,
+                'encoder_z_sample': encoder_z_sample,
+                'encoder_z_mean':   encoder_z_mean,
+                'encoder_z_log_variance': encoder_z_log_variance,
+                'lambda_mean': lambda_mean,
+                'lambda_log_variance': lambda_log_variance,
+                'posterior_firing_rate': posterior_firing_rate,
+                'posterior_z_sample': posterior_z_sample,
+                'posterior_mean': posterior_mean,
+                'posterior_log_variance': posterior_log_variance
+            }
 
     def decode(
         self,
@@ -347,3 +369,21 @@ class PiVAE(nn.Module):
             samples = samples.squeeze(dim=1)                          
 
         return samples
+    
+    def set_inference_mode(
+        self,
+        state: bool
+        ) -> None:
+        """
+        Toggles the model's inference state flag. When `True`, the model's `forward` method does not utilize the `u` parameter. When `False`,  the `u` parameter is utilized.
+
+        Parameters
+        ----------
+        `state` (bool) - the desired inference state
+
+        Returns
+        -------
+        `None`
+        """
+
+        self.inference = state
