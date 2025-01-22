@@ -21,7 +21,7 @@ class PiVAE(nn.Module):
     z_dim (int) - latent z dimension
     discrete_labels (int) - label u format discrete/continuous Default: True
     encoder_n_hidden_layers (int) - number of the MLPEncoder's MLP hidden layers. Default: 2
-    encoder_hidden_layer_dim (int) - dimension of the MLPEncoder's MLP hidden layers. Default: 120
+    encoder_hidden_layer_dim (int) - dimension of the MLPEncoder's MLP hidden layers. Default: 128
     encoder_hidden_layer_activation (nn.Module) - activation function applied to the MLPEncoder's MLP hidden layers. Default: nn.Tanh
     decoder_n_gin_blocks (int) - number of GINBlocks in the GINFlowDecoder. Default: 2
     decoder_gin_block_depth (int) - depth of each GINBlock in the GINFlowDecoder. Default: 2
@@ -36,7 +36,7 @@ class PiVAE(nn.Module):
     decoder_fr_clamp_min (float) - min value used when clamping decoded firing rates. Default: 1E-7
     decoder_fr_clamp_max (float) - max value used when clamping decoded firing rates. Default: 1E7
     z_prior_n_hidden_layers (int) - number of the ZPriorContinuous's MLP hidden layers. Default: 2
-    z_prior_hidden_layer_dim (int) - dimension of the ZPriorContinuous's MLP hidden layers. Default: 20
+    z_prior_hidden_layer_dim (int) - dimension of the ZPriorContinuous's MLP hidden layers. Default: 32
     z_prior_hidden_layer_activation (nn.Module) - activation function applied to the ZPriorContinuous's MLP hidden layers. Default: nn.Tanh
 
     Notes
@@ -53,7 +53,7 @@ class PiVAE(nn.Module):
         z_dim: int,
         discrete_labels: bool = True,
         encoder_n_hidden_layers: int = 2,
-        encoder_hidden_layer_dim: int = 120,
+        encoder_hidden_layer_dim: int = 128,
         encoder_hidden_layer_activation: nn.Module = nn.Tanh,
         decoder_n_gin_blocks: int = 2,
         decoder_gin_block_depth: int = 2,
@@ -64,22 +64,22 @@ class PiVAE(nn.Module):
         decoder_nflow_n_hidden_layers: int = 2,
         decoder_nflow_hidden_layer_dim: int = None,
         decoder_nflow_hidden_layer_activation: nn.Module = nn.ReLU,
-        decoder_observation_model: str = "poisson",
+        decoder_observation_model: str = 'poisson',
         decoder_fr_clamp_min: float = 1E-7,
         decoder_fr_clamp_max: float = 1E7,
         z_prior_n_hidden_layers: int = 2,
-        z_prior_hidden_layer_dim: int = 20,
+        z_prior_hidden_layer_dim: int = 32,
         z_prior_hidden_layer_activation: nn.Module = nn.Tanh
         ) -> None:
         super().__init__()
 
-        if decoder_observation_model == "gaussian":
+        if decoder_observation_model == 'gaussian':
             self.observation_noise_model = nn.Linear(
                 in_features=1,
                 out_features=x_dim, 
                 bias=False
             )
-        elif decoder_observation_model == "poisson":
+        elif decoder_observation_model == 'poisson':
             self.observation_noise_model = None
         else:
             raise ValueError(f"Invalid observation model: {decoder_observation_model}")
@@ -188,14 +188,14 @@ class PiVAE(nn.Module):
 
     def decode(
         self,
-        X: torch.Tensor
+        x: torch.Tensor
         ) -> torch.Tensor:
         """
         Projects samples in the model's latent space (`z_dim`) into the model's observation space (`x_dim`) by passing them through the model's decoder module.
 
         Parameters
         ----------
-        `X` (Tensor) - sample(s) the model's latent space (`z_dim`) to be decoded. `Size([n_samples, z_dim])`
+        `x` (Tensor) - sample(s) the model's latent space (`z_dim`) to be decoded. `Size([n_samples, z_dim])`
 
         Returns
         -------
@@ -203,7 +203,7 @@ class PiVAE(nn.Module):
         """
 
         with torch.no_grad():
-            decoded = self.decoder(X)
+            decoded = self.decoder(x)
 
             if self.decoder_observation_model == 'poisson':
                 decoded = torch.clamp(decoded, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
@@ -212,7 +212,7 @@ class PiVAE(nn.Module):
 
     def encode(
         self,
-        X: torch.Tensor,
+        x: torch.Tensor,
         return_stats: bool = False
         ) -> Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
         """
@@ -220,7 +220,7 @@ class PiVAE(nn.Module):
 
         Parameters
         ----------
-        - `X` (Tensor) - the sample(s) in the model's observation space (`x_dim`) to be encoded. `Size([n_samples, x_dim])`
+        - `x` (Tensor) - the sample(s) in the model's observation space (`x_dim`) to be encoded. `Size([n_samples, x_dim])`
         - `return_stats` (bool) - if `True`, the mean and log of variance associated with the encoded sample are returned; otherwise only the encoded sample is returned.
 
         Returns
@@ -231,7 +231,7 @@ class PiVAE(nn.Module):
         """
 
         with torch.no_grad():
-            encoded_mean, encoded_log_variance = self.encoder(X)
+            encoded_mean, encoded_log_variance = self.encoder(x)
             # Sample latent z using reparameterization trick
             encoded = encoded_mean + torch.exp(0.5 * encoded_log_variance) * torch.randn_like(encoded_mean)
 

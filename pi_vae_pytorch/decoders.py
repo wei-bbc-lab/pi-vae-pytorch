@@ -1,4 +1,5 @@
-from torch import nn, Tensor
+import torch
+from torch import nn
 
 from pi_vae_pytorch.layers import GINBlock, NFlowLayer, PermutationLayer
 
@@ -20,6 +21,7 @@ class GINFlowDecoder(nn.Module):
     nflow_n_hidden_layers (int) - number of the NFlowLayer's MLP hidden layers. Default: 2
     nflow_hidden_layer_dim (int) - dimension of the NFlowLayer's MLP hidden layers. Default: None,
     nflow_hidden_layer_activation (nn.Module) - activation function applied to the NFlowLayer's MLP hidden layers. Default: nn.ReLU,
+    observation_model (str) - poisson or gaussian. Default: poisson
 
     Notes
     -----
@@ -41,11 +43,11 @@ class GINFlowDecoder(nn.Module):
         nflow_n_hidden_layers: int = 2,
         nflow_hidden_layer_dim: int = None,
         nflow_hidden_layer_activation: nn.Module = nn.ReLU,
-        observation_model="poisson"
+        observation_model: str = 'poisson'
         ) -> None:
         super().__init__()
 
-        self.output_activation = nn.Softplus() if observation_model == "poisson" else nn.Identity()
+        self.output_activation = nn.Softplus() if observation_model == 'poisson' else nn.Identity()
 
         self.n_flow = NFlowLayer(
             x_dim=x_dim,
@@ -73,8 +75,11 @@ class GINFlowDecoder(nn.Module):
     
     def forward(
         self,
-        z: Tensor
-        ) -> Tensor:
+        z: torch.Tensor
+        ) -> torch.Tensor:
+        """
+        Projects latent z into observation dimension (x_dim).
+        """
        
         output = self.n_flow(z)
         output = self.gin_blocks(output)

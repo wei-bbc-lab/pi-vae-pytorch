@@ -1,7 +1,5 @@
-from typing import Tuple
-
 import torch
-from torch import nn, Tensor
+from torch import nn
 
 
 class MLP(nn.Module):
@@ -49,8 +47,8 @@ class MLP(nn.Module):
 
     def forward(
         self,
-        input: Tensor
-        ) -> Tensor:
+        input: torch.Tensor
+        ) -> torch.Tensor:
 
         return self.net(input)
 
@@ -75,15 +73,15 @@ class PermutationLayer(nn.Module):
 
     def forward(
         self,
-        x: Tensor
-        ) -> Tensor:
+        x: torch.Tensor
+        ) -> torch.Tensor:
 
         return x[:, self.perm]
 
     def backward(
         self,
-        x: Tensor
-        ) -> Tensor:
+        x: torch.Tensor
+        ) -> torch.Tensor:
 
         return x[:, self.invperm]
 
@@ -117,10 +115,10 @@ class NFlowLayer(nn.Module):
         super().__init__()
 
         # Compute hidden layer dimension
-        if hidden_layer_dim is not None:
-            hidden_dim = max(hidden_layer_dim, x_dim // 4)
-        else:
+        if hidden_layer_dim is None:
             hidden_dim = x_dim // 4
+        else:
+            hidden_dim = max(hidden_layer_dim, x_dim // 4)
 
         self.net = MLP(
             in_features=z_dim,
@@ -132,8 +130,8 @@ class NFlowLayer(nn.Module):
 
     def forward(
         self,
-        z: Tensor
-        ) -> Tensor:
+        z: torch.Tensor
+        ) -> torch.Tensor:
         """
         Maps z to the cancatenation of z and t(z). 
         """
@@ -199,8 +197,8 @@ class AffineCouplingLayer(nn.Module):
 
     def forward(
         self,
-        x: Tensor
-        ) -> Tensor:
+        x: torch.Tensor
+        ) -> torch.Tensor:
         """
         Perform affine coupling transform while preserving volume.
         """
@@ -270,8 +268,8 @@ class GINBlock(nn.Module):
 
     def forward(
         self,
-        x: Tensor
-        ) -> Tensor:
+        x: torch.Tensor
+        ) -> torch.Tensor:
 
         return self.net(x)
     
@@ -294,7 +292,7 @@ class ZPriorContinuous(nn.Module):
         u_dim: int,
         z_dim: int,
         n_hidden_layers: int = 2,
-        hidden_layer_dim: int = 20,
+        hidden_layer_dim: int = 32,
         hidden_layer_activation: nn.Module = nn.Tanh
         ) -> None:
         super().__init__()
@@ -309,15 +307,15 @@ class ZPriorContinuous(nn.Module):
     
     def forward(
         self,
-        u: Tensor
-        ) -> Tuple[Tensor, Tensor]:
+        u: torch.Tensor
+        ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Maps u to mean and log of variance of p(z|u).
         """
         
         z_prior = self.net(u)
         # lambda_mean, lambda_log_variance
-        return torch.chunk(z_prior, 2, -1)
+        return torch.chunk(input=z_prior, chunks=2, dim=-1)
     
 
 class ZPriorDiscrete(nn.Module):
@@ -349,8 +347,8 @@ class ZPriorDiscrete(nn.Module):
 
     def forward(
         self,
-        u: Tensor
-        ) -> Tuple[Tensor, Tensor]:
+        u: torch.Tensor
+        ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Maps u to mean and log of variance of p(z|u).
         """

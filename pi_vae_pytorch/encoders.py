@@ -1,7 +1,5 @@
-from typing import Tuple
-
 import torch
-from torch import nn, Tensor
+from torch import nn
 
 from pi_vae_pytorch.layers import MLP
 
@@ -15,7 +13,7 @@ class MLPEncoder(nn.Module):
     x_dim (int) - observed x dimension
     z_dim (int) - latent z dimension
     n_hidden_layers (int) - number of MLP hidden layers. Default: 2
-    hidden_layer_dim (int) - dimension of each MLP hidden layer. Default: 120
+    hidden_layer_dim (int) - dimension of each MLP hidden layer. Default: 128
     activation (nn.Module) - activation function applied to each MLP hidden layer. Default: nn.Tanh
     """
 
@@ -24,7 +22,7 @@ class MLPEncoder(nn.Module):
         x_dim: int,
         z_dim: int,
         n_hidden_layers: int = 2,
-        hidden_layer_dim: int = 120,
+        hidden_layer_dim: int = 128,
         activation: nn.Module = nn.Tanh
         ) -> None:
         super().__init__()
@@ -39,12 +37,12 @@ class MLPEncoder(nn.Module):
     
     def forward(
         self,
-        x: Tensor
-        ) -> Tuple[Tensor, Tensor]:
+        x: torch.Tensor
+        ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Maps observed x to mean and log of variance of q(z|x).
         """
 
         q_z = self.net(x)
         # phi_mean, phi_log_variance
-        return torch.chunk(q_z, 2, -1)
+        return torch.chunk(input=q_z, chunks=2, dim=-1)
