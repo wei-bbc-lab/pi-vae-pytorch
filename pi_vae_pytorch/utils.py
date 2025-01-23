@@ -72,32 +72,3 @@ class ELBOLoss(nn.Module):
         kl_loss = 0.5 * torch.sum(kl_loss, dim=-1)
 
         return torch.mean(observation_log_liklihood - kl_loss)
-
-
-def compute_posterior(
-    z_mean: Tensor, 
-    z_log_variance: Tensor, 
-    lambda_mean: Tensor, 
-    lambda_log_variance: Tensor,
-    ) -> Tensor:
-    """
-    Compute the full posterior of q(z|x,u)~q(z|x)p(z|u) as a product of Gaussians.
-
-    Parameters
-    ----------
-    z_mean (Tensor) - means of encoded distribution q(z|x). Size([n_samples, z_dim])
-    z_log_variance (Tensor) - log of varinces of encoded distribution q(z|x). Size([n_samples, z_dim])
-    lambda_mean (Tensor) - means of label prior distribution p(z|u). Size([n_samples, z_dim])
-    lambda_log_variance (Tensor) - log of variances of label prior distribution p(z|u). Size([n_samples, z_dim])
-
-    Returns
-    -------
-    posterior_mean: approximate posterior means of distribution q(z|x,u). Size([n_samples, z_dim])
-    posterior_log_variance: approximate posterior log of variances of distribution q(z|x,u). Size([n_samples, z_dim])
-    """
-
-    variance_difference = z_log_variance - lambda_log_variance
-    posterior_mean = (z_mean / (1 + torch.exp(variance_difference))) + (lambda_mean / (1 + torch.exp(torch.neg(variance_difference))))
-    posterior_log_variance = z_log_variance + lambda_log_variance - torch.log(torch.exp(z_log_variance) + torch.exp(lambda_log_variance))
-
-    return posterior_mean, posterior_log_variance

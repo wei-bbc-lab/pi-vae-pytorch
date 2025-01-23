@@ -6,7 +6,6 @@ from torch import nn
 from pi_vae_pytorch.decoders import GINFlowDecoder
 from pi_vae_pytorch.encoders import MLPEncoder
 from pi_vae_pytorch.layers import ZPriorContinuous, ZPriorDiscrete
-from pi_vae_pytorch.utils import compute_posterior
 
 
 class PiVAE(nn.Module):
@@ -163,7 +162,7 @@ class PiVAE(nn.Module):
             lambda_mean, lambda_log_variance = self.z_prior(u)
 
             # Compute the full posterior of q(z|x,u)~q(z|x)p(z|u) as a product of Gaussians
-            posterior_mean, posterior_log_variance = compute_posterior(encoder_z_mean, encoder_z_log_variance, lambda_mean, lambda_log_variance)  
+            posterior_mean, posterior_log_variance = self.compute_posterior(encoder_z_mean, encoder_z_log_variance, lambda_mean, lambda_log_variance)  
 
             # Sample latent z using reparameterization trick
             posterior_z_sample = posterior_mean + torch.exp(0.5 * posterior_log_variance) * torch.randn_like(posterior_mean)
@@ -387,3 +386,32 @@ class PiVAE(nn.Module):
         """
 
         self.inference = state
+
+    @staticmethod
+    def compute_posterior(
+    z_mean: torch.Tensor, 
+    z_log_variance: torch.Tensor, 
+    lambda_mean: torch.Tensor, 
+    lambda_log_variance: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Compute the full posterior of q(z|x,u)~q(z|x)p(z|u) as a product of Gaussians.
+
+        Parameters
+        ----------
+        z_mean (Tensor) - means of encoded distribution q(z|x). Size([n_samples, z_dim])
+        z_log_variance (Tensor) - log of varinces of encoded distribution q(z|x). Size([n_samples, z_dim])
+        lambda_mean (Tensor) - means of label prior distribution p(z|u). Size([n_samples, z_dim])
+        lambda_log_variance (Tensor) - log of variances of label prior distribution p(z|u). Size([n_samples, z_dim])
+
+        Returns
+        -------
+        posterior_mean: approximate posterior means of distribution q(z|x,u). Size([n_samples, z_dim])
+        posterior_log_variance: approximate posterior log of variances of distribution q(z|x,u). Size([n_samples, z_dim])
+        """
+
+        variance_difference = z_log_variance - lambda_log_variance
+        posterior_mean = (z_mean / (1 + torch.exp(variance_difference))) + (lambda_mean / (1 + torch.exp(torch.neg(variance_difference))))
+        posterior_log_variance = z_log_variance + lambda_log_variance - torch.log(torch.exp(z_log_variance) + torch.exp(lambda_log_variance))
+
+        return posterior_mean, posterior_log_variance
