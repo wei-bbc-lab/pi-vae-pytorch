@@ -5,7 +5,7 @@ from torch import nn
 
 from pi_vae_pytorch.decoders import GINFlowDecoder
 from pi_vae_pytorch.encoders import MLPEncoder
-from pi_vae_pytorch.layers import ZPriorContinuous, ZPriorDiscrete
+from pi_vae_pytorch.label_prior import ZPriorContinuous, ZPriorDiscrete
 
 
 class PiVAE(nn.Module):
