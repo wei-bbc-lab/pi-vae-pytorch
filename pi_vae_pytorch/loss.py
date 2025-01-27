@@ -1,29 +1,33 @@
 import torch
-from torch import nn, Tensor
+from torch import nn
 
 
 class ELBOLoss(nn.Module):
     """ 
-    pi-VAE Loss function
+    pi-VAE Loss function which maximizes the evidence lower bound (ELBO) of p(x | u)
 
     Parameters
     ----------
-    observation_model (str) - poisson or gaussian. Default: poisson
-    device (torch.device) - object representing the device on which a Tensor will be allocated. Default: None 
+    - version (int, default=2) - version of the loss function
+    - alpha (float, default=0.5) - Weights the contribution of the encoder KL loss and posterior KL loss to the total KL loss
+    - observation_model (str, default=poisson) - poisson or gaussian
+    - device (torch.device, default=None) - object representing the device on which a Tensor will be allocated 
     
     Inputs
     ------
     - x (Tensor) - observed x. Size([n_samples, x_dim])
-    - firing_rate (Tensor) - decoded firing rates. Size([n_samples, x_dim])
-    - lambda_mean (Tensor) - means from label prior p(z|u). Size([n_samples, z_dim])
-    - lambda_log_variance (Tensor) - log of variances from label prior p(z|u). Size([n_samples, z_dim])
+    - posterior_firing_rate (Tensor) - decoded firing rates. Size([n_samples, x_dim])
     - posterior_mean (Tensor) - means from posterior q(z|x,u)~q(z|x)p(z|u). Size([n_samples. z_dim])
     - posterior_log_variance (Tensor) - log of variances from posterior q(z|x,u)~q(z|x)p(z|u). Size([n_samples, z_dim])
-    - observation_noise_model (nn.Module) - if gaussian observation model, set the observation noise level as different real numbers. Default: None
+    - label_mean (Tensor) - means from label prior p(z|u). Size([n_samples, z_dim])
+    - label_log_variance (Tensor) - log of variances from label prior p(z|u). Size([n_samples, z_dim])
+    - encoder_mean (Tensor, default=None) - means from encoder p(z|x). Size([n_samples, z_dim])
+    - encoder_log_variance (Tensor, default=None) - means from encoder p(z|x). Size([n_samples, z_dim])
+    - observation_noise_model (nn.Module, default=None) - if gaussian observation model, set the observation noise level as different real numbers.
 
     Returns
     -------
-    The total loss (Tensor)
+    - (Tensor) - The total loss. Size([])
 
     Notes
     -----
@@ -44,7 +48,7 @@ class ELBOLoss(nn.Module):
         observation_model: str = 'poisson',
         device: torch.device = None
         ) -> None:
-        super(ELBOLoss, self).__init__()
+        super().__init__()
 
         if version == 1:
             self.version = version
@@ -68,36 +72,52 @@ class ELBOLoss(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        firing_rate: torch.Tensor,
-        lambda_mean: torch.Tensor, 
-        lambda_log_variance: torch.Tensor,
+        posterior_firing_rate: torch.Tensor,
         posterior_mean: torch.Tensor, 
         posterior_log_variance: torch.Tensor,
+        label_mean: torch.Tensor, 
+        label_log_variance: torch.Tensor,
         encoder_mean: torch.Tensor = None,
         encoder_log_variance: torch.Tensor = None,
         observation_noise_model: nn.Module = None
-        ) -> Tensor:
+        ) -> torch.Tensor:
 
         if self.observation_model == 'poisson':
-            observation_log_liklihood = torch.sum(firing_rate - x * torch.log(firing_rate), dim=-1)
+            observation_log_liklihood = torch.sum(posterior_firing_rate - x * torch.log(posterior_firing_rate), dim=-1)
         else:
             observation_log_variance = observation_noise_model(self.ones)
-            observation_log_liklihood = torch.sum(torch.square(firing_rate - x) / (2 * torch.exp(observation_log_variance)) + (observation_log_variance / 2), dim=-1)
+            observation_log_liklihood = torch.sum(torch.square(posterior_firing_rate - x) / (2 * torch.exp(observation_log_variance)) + (observation_log_variance / 2), dim=-1)
 
         if self.version == 1:
-            kl_loss = self.compute_kl_loss(posterior_mean, posterior_log_variance, lambda_mean, lambda_log_variance)
-            kl_loss = 0.5 * torch.sum(kl_loss, dim=-1)
+            kl_loss = 0.5 * self.compute_kl_loss(posterior_mean, posterior_log_variance, label_mean, label_log_variance)
         else:
-            encoder_kl_loss = self.compute_kl_loss(encoder_mean, encoder_log_variance, lambda_mean, lambda_log_variance)
-            encoder_kl_loss = 0.5 * torch.sum(encoder_kl_loss, dim=-1)
-
-            posterior_kl_loss = self.compute_kl_loss(posterior_mean, posterior_log_variance, lambda_mean, lambda_log_variance)
-            posterior_kl_loss = 0.5 * torch.sum(posterior_kl_loss, dim=-1)
-
+            encoder_kl_loss = 0.5 * self.compute_kl_loss(encoder_mean, encoder_log_variance, label_mean, label_log_variance)
+            posterior_kl_loss = 0.5 * self.compute_kl_loss(posterior_mean, posterior_log_variance, label_mean, label_log_variance)
             kl_loss = self.alpha * encoder_kl_loss + (1 - self.alpha) * posterior_kl_loss
         
         return torch.mean(observation_log_liklihood - kl_loss)
     
     @staticmethod
-    def compute_kl_loss(mean_0, log_variance_0, mean_1, log_variance_1):
-        return 1 + log_variance_0 - log_variance_1 - ((torch.square(mean_0 - mean_1) + torch.exp(log_variance_0)) / torch.exp(log_variance_1))
+    def compute_kl_loss(
+        mean_0: torch.Tensor,
+        log_variance_0: torch.Tensor,
+        mean_1: torch.Tensor,
+        log_variance_1: torch.Tensor
+        ) -> torch.Tensor:
+        """
+        Computes the Kullback–Leibler divergence between two distributions.
+
+        Parameters
+        ----------
+        - mean_0 (Tensor) - predicted mean(s) of a distribution. Size([n_samples, z_dim])
+        - log_variance_0 (Tensor) - predicted log of variance(s) of a distribution. Size([n_samples, z_dim])
+        - mean_1 (Tensor) - predicted mean(s) of a distribution. Size([n_samples, z_dim])
+        - log_variance_1 (Tensor) - predicted log of variance(s) of a distribution. Size([n_samples, z_dim])
+
+        Returns
+        -------
+        - (Tensor) - the KL divergence loss. Size([])
+        """
+
+        kl_loss = 1 + log_variance_0 - log_variance_1 - ((torch.square(mean_0 - mean_1) + torch.exp(log_variance_0)) / torch.exp(log_variance_1))
+        return torch.sum(kl_loss, dim=-1)

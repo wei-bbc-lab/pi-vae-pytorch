@@ -89,7 +89,7 @@ pi_vae_pytorch.PiVAE(
     Dimension of observation `x`  
 
 - **u_dim:** *int*  
-    Dimension of observation labels. In the discrete regeime, this corresponds to the number of unique classes/labels. In the continuous regeime, this corresponds to the dimension of each label.  
+    Dimension of observation labels. In the discrete regime, this corresponds to the number of unique classes/labels. In the continuous regime, this corresponds to the dimension of each label.  
 
 - **z_dim:** *int*  
     Dimension of latent `z`  
@@ -97,7 +97,7 @@ pi_vae_pytorch.PiVAE(
 - **discrete_labels:** *bool, default=*`True`  
     - `True`: discrete or `False`: continuous  
 
-    Flag denoting the observation's label regeime. 
+    Flag denoting the observation's label regime. 
 - **encoder_n_hidden_layers:** *int, default=*`2`  
     Number of hidden layers in the MLP of the model's encoder.  
 
@@ -395,45 +395,114 @@ outputs = model(x, u) # dict
 
 ## Loss Function - ELBOLoss
 
-pi-VAE learns the deep generative model and the approximate posterior q(z \| x, u) of the true posterior p(z \| x, u) by maximizing the evidence lower bound (ELBO) of p(x \| u). This loss function is implemented in the included `ELBOLoss` class.
+pi-VAE learns the deep generative model and the approximate posterior q(z \| x, u) of the true posterior p(z \| x, u) by maximizing the evidence lower bound (ELBO) of p(x \| u). This loss function is implemented in the included `ELBOLoss` class.  
+
+#### Versions
+
+pi-VAE 1.0 and 2.0 differ solely in their loss function, specifically how the [Kullback–Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) component of the loss is computed:
+
+- **Version 1:** Computes the KL divergence between the posterior and the label prior.  
+- **Version 2:** Computes the KL divergence between the posterior and the label prior as well as between the encoder and label prior. These two values are then weighted by a user specified $\alpha$ parameter. Documentation for the parameter is available below in the *Initialization* section.
 
 ### Initialization
 
-- **observation_model**: *str, default=*`'poisson'`  
-    - One of `poisson` or `gaussian`  
+```
+pi_vae_pytorch.ELBOLoss(
+    version=2,
+    alpha=0.5,
+    observation_model='poisson',
+    device=None)
+```  
+
+- **version:** *int, default=*`2`  
+    - Either `1` or `2`  
+
+    The version of the loss function.  
+
+- **alpha:** *float, default=*`0.5`  
+    - Only applied when `version=2`  
+    - $\alpha \in [0, 1]$  
+
+    Weights the contribution of the encoder KL loss and posterior KL loss to the total KL loss. 
+
+    ```
+    kl_loss = (alpha * encoder_kl_loss) + ((1 - alpha) * posterior_kl_loss)
+    ```   
+
+- **observation_model:** *str, default=*`'poisson'`  
+    - Either `poisson` or `gaussian`  
     - Should use the same value passed to `decoder_observation_model` when initializing pi-VAE.  
 
     The observation model used by pi-VAE's decoder.  
 
-- **device**: *torch.device, default=*`None` *(uses the current device for the default tensor type)*  
+- **device:** *torch.device, default=*`None` *(uses the CPU)*  
     - Only applied when `observation_model='gaussian'`  
 
-    An object representing the device on which a `torch.Tensor` will be allocated. Should match the `device` on which the model resides.  
+    A [`torch.device`](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) object representing the device on which operations will be performed. Should match the `torch.device` on which the model resides.  
 
 ### Inputs
 
-- **x**: *Tensor of shape(n_samples, x_dim)*  
-    Observations `x`.  
+- **x:** *Tensor of shape(n_samples, x_dim)*  
+    Sample(s) in the model's observation space.  
 
-- **firing_rate**: *Tensor of shape(n_samples, x_dim)*  
-    Predicted firing rate of generated latent `z`.  
+- **posterior_firing_rate:** *Tensor of shape(n_samples, x_dim)*  
+    Predicted firing rate of latent(s) generated from posterior q(z \| x,u).  
 
-- **lambda_mean**: *Tensor of shape(n_samples, z_dim)*  
-    Means from label prior p(z \| u).  
+- **posterior_mean:** *Tensor of shape(n_samples, z_dim)*  
+    Mean from posterior q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
 
-- **lambda_log_variance**: *Tensor of shape(n_samples, z_dim)*  
-    Log of variances from label prior p(z \| u).  
+- **posterior_log_variance:** *Tensor of shape(n_samples, z_dim)*  
+    Log of variance from posterior q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
 
-- **posterior_mean**: *Tensor of shape(n_samples, z_dim)*  
-    Means from full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
+- **label_mean:** *Tensor of shape(n_samples, z_dim)*  
+    Mean from the label prior estimator which approximates p(z \| u).  
 
-- **posterior_log_variance**: *Tensor of shape(n_samples, z_dim)*  
-    Log of variances from full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
+- **label_log_variance:** *Tensor of shape(n_samples, z_dim)*  
+    Log of variance from the label prior estimator which approximates p(z \| u).  
 
-- **observation_noise_model**: *nn.Module, default=*`None`  
-    - Only required when `observation_model='gaussian'`  
+- **encoder_mean:** *Tensor of shape(n_samples, z_dim), default=*`None`  
+    - Only used when `version=2`  
+    
+    Mean from the encoder which approximates p(z \| x).  
+
+- **encoder_log_variance:** *Tensor of shape(n_samples, z_dim), default=*`None`  
+    - Only used when `version=2`  
+
+    Log of variance from the encoder which approximates p(z \| x).  
+
+- **observation_noise_model:** *nn.Module, default=*`None`  
+    - Only used when `observation_model='gaussian'`  
     
     The noise model used when pi-VAE's decoder utilizes a Gaussian observation model. When pi-VAE is initialized with `decoder_observation_model='gaussian'`, the model's `observation_noise_model` attribute should be used.
+
+### Outputs
+
+- **loss:** *Tensor of shape(1)*  
+    The total loss of the samples.
+
+### Static Methods
+
+- **compute_kl_loss(*mean_0, log_variance_0, mean_1, log_variance_1*)**  
+    Computes the [Kullback–Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) between two distributions.  
+
+    > **Parameters:**  
+
+    - **mean_0:** *Tensor of shape(n_samples, z_dim)*  
+        Predicted mean(s) of a distribution.  
+
+    - **log_variance_0:** *Tensor of shape(n_samples, z_dim)*  
+        Predicted log of the variance(s) of a distribution.  
+
+    - **mean_1:** *Tensor of shape(n_samples, z_dim)*  
+        Predicted mean(s) of a distribution.  
+
+    - **log_variance_1:** *Tensor of shape(n_samples, z_dim)*  
+        Predicted log of the variance(s) of a distribution.  
+    
+    > **Returns:**  
+
+    - **kl_loss**: *Tensor of shape(1)*  
+        The Kullback-Leibler divergence loss.  
 
 ### Examples
 
@@ -448,11 +517,13 @@ outputs = model(x, u) # Initialized with decoder_observation_model='poisson'
 
 loss = loss_fn(
     x=x,
-    firing_rate=outputs['firing_rate'],
-    lambda_mean=outputs['lambda_mean'],
-    lambda_log_variance=outputs['lambda_log_variance'],
+    posterior_firing_rate=outputs['posterior_firing_rate'],
     posterior_mean=outputs['posterior_mean'],
-    posterior_log_variance=outputs['posterior_log_variance']
+    posterior_log_variance=outputs['posterior_log_variance'],
+    label_mean=outputs['lambda_mean'],
+    label_log_variance=outputs['lambda_log_variance'],
+    encoder_mean=outputs['encoder_z_mean'],
+    encoder_log_variance=outputs['encoder_z_log_variance']
 )
 
 loss.backward()
@@ -474,11 +545,13 @@ outputs = model(x, u)
 
 loss = loss_fn(
     x=x,
-    firing_rate=outputs['firing_rate'],
-    lambda_mean=outputs['lambda_mean'],
-    lambda_log_variance=outputs['lambda_log_variance'],
+    posterior_firing_rate=outputs['posterior_firing_rate'],
     posterior_mean=outputs['posterior_mean'],
     posterior_log_variance=outputs['posterior_log_variance'],
+    label_mean=outputs['lambda_mean'],
+    label_log_variance=outputs['lambda_log_variance'],
+    encoder_mean=outputs['encoder_z_mean'],
+    encoder_log_variance=outputs['encoder_z_log_variance']
     observation_noise_model=model.observation_noise_model
 )
 

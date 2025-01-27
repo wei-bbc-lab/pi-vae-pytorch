@@ -361,11 +361,13 @@ for epoch in pbar:
         outputs = vae(x, u)
         loss = loss_fn(
             x=x,
-            firing_rate=outputs["posterior_firing_rate"],
-            lambda_mean=outputs["lambda_mean"],
-            lambda_log_variance=outputs["lambda_log_variance"],
+            posterior_firing_rate=outputs["posterior_firing_rate"],
             posterior_mean=outputs["posterior_mean"],
-            posterior_log_variance=outputs["posterior_log_variance"]
+            posterior_log_variance=outputs["posterior_log_variance"],
+            label_mean=outputs["lambda_mean"],
+            label_log_variance=outputs["lambda_log_variance"],
+            encoder_mean=outputs["encoder_z_mean"],
+            encoder_log_variance=outputs["encoder_z_log_variance"]
         )
         loss.backward()
         optimizer.step()
@@ -382,11 +384,13 @@ for epoch in pbar:
                 outputs = vae(x, u)
                 loss = loss_fn(
                     x=x,
-                    firing_rate=outputs["posterior_firing_rate"],
-                    lambda_mean=outputs["lambda_mean"],
-                    lambda_log_variance=outputs["lambda_log_variance"],
+                    posterior_firing_rate=outputs["posterior_firing_rate"],
                     posterior_mean=outputs["posterior_mean"],
-                    posterior_log_variance=outputs["posterior_log_variance"]
+                    posterior_log_variance=outputs["posterior_log_variance"],
+                    label_mean=outputs["lambda_mean"],
+                    label_log_variance=outputs["lambda_log_variance"],
+                    encoder_mean=outputs["encoder_z_mean"],
+                    encoder_log_variance=outputs["encoder_z_log_variance"]
                 )
                 valid_loss += loss.item() / n_valid
             
