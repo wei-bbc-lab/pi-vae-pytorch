@@ -16,6 +16,7 @@ description = "A Pytorch implementation of Poisson Identifiable VAE (pi-VAE), a 
 readme = "README.md"
 keywords = [
     "vae",
+    "variational autoencoder",
     "pi-vae",
     "poisson identifiable vae",
     "poisson identifiable variational autoencoder",

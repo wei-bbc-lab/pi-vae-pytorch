@@ -27,7 +27,7 @@ u = torch.randn(n_samples, 1)
 outputs = model(x, u) 
 
 for key in outputs.keys():
-    if key == "firing_rate":
+    if key == "posterior_firing_rate":
         dim2 = x_dim
     else:
         dim2 = z_dim
@@ -52,7 +52,7 @@ u = torch.randint(0, u_dim, (n_samples,))
 outputs = model(x, u) 
 
 for key in outputs.keys():
-    if key == "firing_rate":
+    if key == "posterior_firing_rate":
         dim2 = x_dim
     else:
         dim2 = z_dim

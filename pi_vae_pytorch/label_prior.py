@@ -4,17 +4,17 @@ from torch import nn
 from pi_vae_pytorch.layers import MLP
 
 
-class ZPriorContinuous(nn.Module):
+class LabelPriorContinuous(nn.Module):
     """
     Compute the mean and log of variance of label prior p(z|u) for continuous label u.
 
     Parameters
     ----------
-    u_dim (int) - label u dimension
-    z_dim (int) - latent z dimension
-    n_hidden_layers (int) - number of MLP hidden layers. Default: 2
-    hidden_layer_dim (int) - dimension of MLP hidden layers. Default: 32
-    hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers. Default: nn.Tanh
+    - u_dim (int) - label u dimension
+    - z_dim (int) - latent z dimension
+    - n_hidden_layers (int) - number of MLP hidden layers. Default: 2
+    - hidden_layer_dim (int) - dimension of MLP hidden layers. Default: 32
+    - hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers. Default: nn.Tanh
     """
 
     def __init__(
@@ -48,14 +48,14 @@ class ZPriorContinuous(nn.Module):
         return torch.chunk(input=z_prior, chunks=2, dim=-1)
     
 
-class ZPriorDiscrete(nn.Module):
+class LabelPriorDiscrete(nn.Module):
     """
     Compute the mean and log of variance of label prior p(z|u) for discrete label u.
 
     Parameters
     ----------
-    u_dim (int) - label u dimension
-    z_dim (int) - latent z dimension
+    - u_dim (int) - label u dimension
+    - z_dim (int) - latent z dimension
     """
 
     def __init__(

@@ -364,10 +364,10 @@ for epoch in pbar:
             posterior_firing_rate=outputs["posterior_firing_rate"],
             posterior_mean=outputs["posterior_mean"],
             posterior_log_variance=outputs["posterior_log_variance"],
-            label_mean=outputs["lambda_mean"],
-            label_log_variance=outputs["lambda_log_variance"],
-            encoder_mean=outputs["encoder_z_mean"],
-            encoder_log_variance=outputs["encoder_z_log_variance"]
+            label_mean=outputs["label_mean"],
+            label_log_variance=outputs["label_log_variance"],
+            encoder_mean=outputs["encoder_mean"],
+            encoder_log_variance=outputs["encoder_log_variance"]
         )
         loss.backward()
         optimizer.step()
@@ -387,10 +387,10 @@ for epoch in pbar:
                     posterior_firing_rate=outputs["posterior_firing_rate"],
                     posterior_mean=outputs["posterior_mean"],
                     posterior_log_variance=outputs["posterior_log_variance"],
-                    label_mean=outputs["lambda_mean"],
-                    label_log_variance=outputs["lambda_log_variance"],
-                    encoder_mean=outputs["encoder_z_mean"],
-                    encoder_log_variance=outputs["encoder_z_log_variance"]
+                    label_mean=outputs["label_mean"],
+                    label_log_variance=outputs["label_log_variance"],
+                    encoder_mean=outputs["encoder_mean"],
+                    encoder_log_variance=outputs["encoder_log_variance"]
                 )
                 valid_loss += loss.item() / n_valid
             
@@ -419,10 +419,10 @@ with torch.no_grad():
     outputs = vae(x_true, u_true if discrete_prior else u_true.unsqueeze(-1))
     post_means = outputs["posterior_mean"]
     post_log_vars = outputs["posterior_log_variance"]
-    post_lam_means = outputs["lambda_mean"]
-    post_lam_log_vars = outputs["lambda_log_variance"]
-    z_means = outputs["encoder_z_mean"]
-    z_log_vars = outputs["encoder_z_log_variance"]
+    post_lam_means = outputs["label_mean"]
+    post_lam_log_vars = outputs["label_log_variance"]
+    z_means = outputs["encoder_mean"]
+    z_log_vars = outputs["encoder_log_variance"]
 
 post_means = post_means.cpu()
 z_means = z_means.cpu()

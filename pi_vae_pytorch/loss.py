@@ -109,10 +109,10 @@ class ELBOLoss(nn.Module):
 
         Parameters
         ----------
-        - mean_0 (Tensor) - predicted mean(s) of a distribution. Size([n_samples, z_dim])
-        - log_variance_0 (Tensor) - predicted log of variance(s) of a distribution. Size([n_samples, z_dim])
-        - mean_1 (Tensor) - predicted mean(s) of a distribution. Size([n_samples, z_dim])
-        - log_variance_1 (Tensor) - predicted log of variance(s) of a distribution. Size([n_samples, z_dim])
+        - mean_0 (Tensor) - predicted mean(s) of a distribution. Size([n_samples, sample_dim])
+        - log_variance_0 (Tensor) - predicted log of variance(s) of a distribution. Size([n_samples, sample_dim])
+        - mean_1 (Tensor) - predicted mean(s) of a distribution. Size([n_samples, sample_dim])
+        - log_variance_1 (Tensor) - predicted log of variance(s) of a distribution. Size([n_samples, sample_dim])
 
         Returns
         -------

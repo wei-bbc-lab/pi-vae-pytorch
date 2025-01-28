@@ -10,11 +10,11 @@ class MLPEncoder(nn.Module):
 
     Parameters
     ----------
-    x_dim (int) - observed x dimension
-    z_dim (int) - latent z dimension
-    n_hidden_layers (int) - number of MLP hidden layers. Default: 2
-    hidden_layer_dim (int) - dimension of each MLP hidden layer. Default: 128
-    activation (nn.Module) - activation function applied to each MLP hidden layer. Default: nn.Tanh
+    - x_dim (int) - observed x dimension
+    - z_dim (int) - latent z dimension
+    - n_hidden_layers (int, default=2) - number of MLP hidden layers
+    - hidden_layer_dim (int, default=128) - dimension of each MLP hidden layer
+    - activation (nn.Module, default=nn.Tanh) - activation function applied to each MLP hidden layer
     """
 
     def __init__(

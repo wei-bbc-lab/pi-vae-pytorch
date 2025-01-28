@@ -8,11 +8,11 @@ class MLP(nn.Module):
 
     Parameters
     ----------
-    in_features (int) - number of input features 
-    out_features (int) - number of output features
-    n_hidden_layers (int) - number of hidden layers
-    hidden_layer_features (int) - number of features per hidden layer
-    activation (nn.Module) - activation function applied to hidden layers
+    - in_features (int) - number of input features 
+    - out_features (int) - number of output features
+    - n_hidden_layers (int) - number of hidden layers
+    - hidden_layer_features (int) - number of features per hidden layer
+    - activation (nn.Module) - activation function applied to hidden layers
     """
 
     def __init__(
@@ -59,7 +59,7 @@ class PermutationLayer(nn.Module):
 
     Parameters
     ----------
-    n_channels: number of channels to permute
+    - n_channels (int) - number of channels to permute
     """
 
     def __init__(
@@ -93,15 +93,15 @@ class NFlowLayer(nn.Module):
 
     Parameters
     ----------
-    x_dim (int) - observed x dimension
-    z_dim (int) - latent z dimension
-    n_hidden_layers (int) - number of MLP hidden layers. Default: 2
-    hidden_layer_dim (int) - dimension of MLP hidden layers. Default: None
-    hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers. Default: nn.ReLU
+    -x_dim (int) - observed x dimension
+    - z_dim (int) - latent z dimension
+    - n_hidden_layers (int, default=2) - number of MLP hidden layers
+    - hidden_layer_dim (int, default=None) - dimension of MLP hidden layers
+    - hidden_layer_activation (nn.Module, default=nn.ReLU) - activation function applied to MLP hidden layers
 
     Notes
     -----
-    hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(hidden_layer_dim, x_dim // 4).
+    - hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(hidden_layer_dim, x_dim // 4).
     """
 
     def __init__(
@@ -147,18 +147,16 @@ class AffineCouplingLayer(nn.Module):
 
     Parameters
     ----------
-    x_dim (int) - observed x dimension
-    x_slice_dim (int) - index at which to split an n-dimensional sample x. Default: None
-    n_hidden_layers (int) - number of MLP hidden layers. Default: 2
-    hidden_layer_dim (int) - dimension of MLP hidden layers. Default: None
-    hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers
+    - x_dim (int) - observed x dimension
+    - x_slice_dim (int, default=None) - index at which to split an n-dimensional sample x
+    - n_hidden_layers (int, default=2) - number of MLP hidden layers
+    - hidden_layer_dim (int, default=None) - dimension of MLP hidden layers
+    - hidden_layer_activation (nn.Module, default=nn.ReLU) - activation function applied to MLP hidden layers
 
     Notes
     -----
-    x_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < x_slice_dim < x_dim. 
-    hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(hidden_layer_dim, x_dim // 4).
-
-    TODO: add support for both batched and unbatched inputs.
+    - x_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < x_slice_dim < x_dim. 
+    - hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(hidden_layer_dim, x_dim // 4).
     """
 
     def __init__(
@@ -178,7 +176,7 @@ class AffineCouplingLayer(nn.Module):
             self.slice_dim = x_dim // 2
         else:
             if x_slice_dim >= x_dim:
-                raise ValueError(f"x_slice_dim must be less than x_dim.")
+                raise ValueError('x_slice_dim must be less than x_dim.')
             self.slice_dim = x_slice_dim
 
         # Compute hidden layer dimension
@@ -230,17 +228,17 @@ class GINBlock(nn.Module):
 
     Parameters
     ----------
-    x_dim (int) - observed x dimension
-    n_affine_layers (int) - number of AffineCouplingLayers in the block. Default: 2
-    affine_input_layer_slice_dim (int) - index at which to split an n-dimensional sample x input to each AffineCouplingLayer. Default: None
-    affine_n_hidden_layers (int) - number of MLP hidden layers within each AffineCouplingLayer. Default: 2
-    affine_hidden_layer_dim (int) - dimension of each MLP hidden layer within each AffineCouplingLayer. Default: None
-    affine_hidden_layer_activation (nn.Module) - activation function applied to MLP hidden layers within each AffineCouplingLayer. Default: nn.ReLU
+    - x_dim (int) - observed x dimension
+    - n_affine_layers (int, default=2) - number of AffineCouplingLayers in the block
+    - affine_input_layer_slice_dim (int, default=None) - index at which to split an n-dimensional sample x input to each AffineCouplingLayer
+    - affine_n_hidden_layers (int, default=2) - number of MLP hidden layers within each AffineCouplingLayer
+    - affine_hidden_layer_dim (int, default=None) - dimension of each MLP hidden layer within each AffineCouplingLayer
+    - affine_hidden_layer_activation (nn.Module, default=nn.ReLU) - activation function applied to MLP hidden layers within each AffineCouplingLayer
 
     Notes
     -----
-    affine_input_layer_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < affine_input_layer_slice_dim < x_dim. 
-    affine_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(affine_hidden_layer_dim, x_dim // 4).
+    - affine_input_layer_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < affine_input_layer_slice_dim < x_dim. 
+    - affine_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(affine_hidden_layer_dim, x_dim // 4).
     """
 
     def __init__(

@@ -5,7 +5,7 @@ from torch import nn
 
 from pi_vae_pytorch.decoders import GINFlowDecoder
 from pi_vae_pytorch.encoders import MLPEncoder
-from pi_vae_pytorch.label_prior import ZPriorContinuous, ZPriorDiscrete
+from pi_vae_pytorch.label_prior import LabelPriorContinuous, LabelPriorDiscrete
 
 
 class PiVAE(nn.Module):
@@ -15,34 +15,34 @@ class PiVAE(nn.Module):
 
     Parameters
     ----------
-    x_dim (int) - observed x dimension
-    u_dim (int) - 
-    z_dim (int) - latent z dimension
-    discrete_labels (int) - label u format discrete/continuous Default: True
-    encoder_n_hidden_layers (int) - number of the MLPEncoder's MLP hidden layers. Default: 2
-    encoder_hidden_layer_dim (int) - dimension of the MLPEncoder's MLP hidden layers. Default: 128
-    encoder_hidden_layer_activation (nn.Module) - activation function applied to the MLPEncoder's MLP hidden layers. Default: nn.Tanh
-    decoder_n_gin_blocks (int) - number of GINBlocks in the GINFlowDecoder. Default: 2
-    decoder_gin_block_depth (int) - depth of each GINBlock in the GINFlowDecoder. Default: 2
-    decoder_affine_input_layer_slice_dim (int) - index at which to split an n-dimensional sample x input to each AffineCouplingLayer. Default: None
-    decoder_affine_n_hidden_layers (int) - number of each AffineCouplingLayer's MLP hidden layers. Default: 2
-    decoder_affine_hidden_layer_dim (int) - dimension of each AffineCouplingLayer's MLP hidden layers. Default: None
-    decoder_affine_hidden_layer_activation (nn.Module) - activation function applied to each AffineCouplingLayer's MLP hidden layers. Default: nn.ReLU
-    decoder_nflow_n_hidden_layers (int) - number of the NFlowLayer's MLP hidden layers. Default: 2
-    decoder_nflow_hidden_layer_dim (int) - dimension of the NFlowLayer's MLP hidden layers. Default: None
-    decoder_nflow_hidden_layer_activation (nn.Module) - activation function applied to the NFlowLayer's MLP hidden layers. Default: nn.ReLU
-    decoder_observation_model (str) - GINFlowDecoder's observation model poisson/gaussian Default: "poisson"
-    decoder_fr_clamp_min (float) - min value used when clamping decoded firing rates. Default: 1E-7
-    decoder_fr_clamp_max (float) - max value used when clamping decoded firing rates. Default: 1E7
-    z_prior_n_hidden_layers (int) - number of the ZPriorContinuous's MLP hidden layers. Default: 2
-    z_prior_hidden_layer_dim (int) - dimension of the ZPriorContinuous's MLP hidden layers. Default: 32
-    z_prior_hidden_layer_activation (nn.Module) - activation function applied to the ZPriorContinuous's MLP hidden layers. Default: nn.Tanh
+    - x_dim (int) - observed x dimension
+    - u_dim (int) -  label u dimension
+    - z_dim (int) - latent z dimension
+    - discrete_labels (bool, default=True) - label u format discrete(True) or continuous(False)
+    - encoder_n_hidden_layers (int, default=2) - number of the MLPEncoder's MLP hidden layers
+    - encoder_hidden_layer_dim (int, default=128) - dimension of the MLPEncoder's MLP hidden layers
+    - encoder_hidden_layer_activation (nn.Module, default=nn.Tanh) - activation function applied to the MLPEncoder's MLP hidden layers
+    - decoder_n_gin_blocks (int, default=2) - number of GINBlocks in the GINFlowDecoder
+    - decoder_gin_block_depth (int, default=2) - depth of each GINBlock in the GINFlowDecoder
+    - decoder_affine_input_layer_slice_dim (int, default=None) - index at which to split an n-dimensional sample x input to each AffineCouplingLayer
+    - decoder_affine_n_hidden_layers (int, default=2) - number of each AffineCouplingLayer's MLP hidden layers
+    - decoder_affine_hidden_layer_dim (int, default=None) - dimension of each AffineCouplingLayer's MLP hidden layers
+    - decoder_affine_hidden_layer_activation (nn.Module, default=nn.ReLU) - activation function applied to each AffineCouplingLayer's MLP hidden layers
+    - decoder_nflow_n_hidden_layers (int, default=2) - number of the NFlowLayer's MLP hidden layers
+    - decoder_nflow_hidden_layer_dim (int, default=None) - dimension of the NFlowLayer's MLP hidden layers
+    - decoder_nflow_hidden_layer_activation (nn.Module, default=nn.ReLU) - activation function applied to the NFlowLayer's MLP hidden layers
+    - decoder_observation_model (str, default=poisson) - GINFlowDecoder's observation model poisson/gaussian
+    - decoder_fr_clamp_min (float, default=1E-7) - min value used when clamping decoded firing rates
+    - decoder_fr_clamp_max (float, default=1E7) - max value used when clamping decoded firing rates
+    - label_prior_n_hidden_layers (int, default=2) - number of the LabelPriorContinuous's MLP hidden layers
+    - label_prior_hidden_layer_dim (int, default=32) - dimension of the LabelPriorContinuous's MLP hidden layers
+    - label_prior_hidden_layer_activation (nn.Module, default=nn.Tanh) - activation function applied to the LabelPriorContinuous's MLP hidden layers
 
     Notes
     -----
-    decoder_affine_input_layer_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < decoder_affine_input_layer_slice_dim < x_dim.
-    decoder_affine_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(decoder_affine_hidden_layer_dim, x_dim // 4).
-    decoder_nflow_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(decoder_nflow_hidden_layer_dim, x_dim // 4).
+    - decoder_affine_input_layer_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < decoder_affine_input_layer_slice_dim < x_dim.
+    - decoder_affine_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(decoder_affine_hidden_layer_dim, x_dim // 4).
+    - decoder_nflow_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(decoder_nflow_hidden_layer_dim, x_dim // 4).
     """
     
     def __init__(
@@ -66,9 +66,9 @@ class PiVAE(nn.Module):
         decoder_observation_model: str = 'poisson',
         decoder_fr_clamp_min: float = 1E-7,
         decoder_fr_clamp_max: float = 1E7,
-        z_prior_n_hidden_layers: int = 2,
-        z_prior_hidden_layer_dim: int = 32,
-        z_prior_hidden_layer_activation: nn.Module = nn.Tanh
+        label_prior_n_hidden_layers: int = 2,
+        label_prior_hidden_layer_dim: int = 32,
+        label_prior_hidden_layer_activation: nn.Module = nn.Tanh
         ) -> None:
         super().__init__()
 
@@ -116,17 +116,17 @@ class PiVAE(nn.Module):
         )
         
         if discrete_labels:
-            self.z_prior = ZPriorDiscrete(
+            self.label_prior = LabelPriorDiscrete(
                 u_dim=u_dim,
                 z_dim=z_dim
             )
         else:
-            self.z_prior = ZPriorContinuous(
+            self.label_prior = LabelPriorContinuous(
                 u_dim=u_dim,
                 z_dim=z_dim,
-                n_hidden_layers=z_prior_n_hidden_layers,
-                hidden_layer_dim=z_prior_hidden_layer_dim,
-                hidden_layer_activation=z_prior_hidden_layer_activation
+                n_hidden_layers=label_prior_n_hidden_layers,
+                hidden_layer_dim=label_prior_hidden_layer_dim,
+                hidden_layer_activation=label_prior_hidden_layer_activation
             )
 
         self.inference = False
@@ -138,11 +138,11 @@ class PiVAE(nn.Module):
         ) -> dict[str, torch.Tensor]:
 
         # Encode each sample observation x to latent z approximating q(z|x)
-        encoder_z_mean, encoder_z_log_variance = self.encoder(x)
+        encoder_mean, encoder_log_variance = self.encoder(x)
 
         with torch.no_grad():
             # Sample latent z using reparameterization trick
-            encoder_z_sample = encoder_z_mean + torch.exp(0.5 * encoder_z_log_variance) * torch.randn_like(encoder_z_mean)
+            encoder_z_sample = encoder_mean + torch.exp(0.5 * encoder_log_variance) * torch.randn_like(encoder_mean)
 
             # Generate firing rate using sampled latent z
             encoder_firing_rate = self.decoder(encoder_z_sample)
@@ -154,15 +154,15 @@ class PiVAE(nn.Module):
             return {
                 'encoder_firing_rate': encoder_firing_rate,
                 'encoder_z_sample': encoder_z_sample,
-                'encoder_z_mean': encoder_z_mean,
-                'encoder_z_log_variance': encoder_z_log_variance                
+                'encoder_mean': encoder_mean,
+                'encoder_log_variance': encoder_log_variance                
             }
         else:
             # Mean and log of variance for each sample using label prior p(z|u)
-            lambda_mean, lambda_log_variance = self.z_prior(u)
+            label_mean, label_log_variance = self.label_prior(u)
 
             # Compute the full posterior of q(z|x,u)~q(z|x)p(z|u) as a product of Gaussians
-            posterior_mean, posterior_log_variance = self.compute_posterior(encoder_z_mean, encoder_z_log_variance, lambda_mean, lambda_log_variance)  
+            posterior_mean, posterior_log_variance = self.compute_posterior(encoder_mean, encoder_log_variance, label_mean, label_log_variance)  
 
             # Sample latent z using reparameterization trick
             posterior_z_sample = posterior_mean + torch.exp(0.5 * posterior_log_variance) * torch.randn_like(posterior_mean)
@@ -175,10 +175,10 @@ class PiVAE(nn.Module):
             return {
                 'encoder_firing_rate': encoder_firing_rate,
                 'encoder_z_sample': encoder_z_sample,
-                'encoder_z_mean':   encoder_z_mean,
-                'encoder_z_log_variance': encoder_z_log_variance,
-                'lambda_mean': lambda_mean,
-                'lambda_log_variance': lambda_log_variance,
+                'encoder_mean':   encoder_mean,
+                'encoder_log_variance': encoder_log_variance,
+                'label_mean': label_mean,
+                'label_log_variance': label_log_variance,
                 'posterior_firing_rate': posterior_firing_rate,
                 'posterior_z_sample': posterior_z_sample,
                 'posterior_mean': posterior_mean,
@@ -194,11 +194,11 @@ class PiVAE(nn.Module):
 
         Parameters
         ----------
-        `x` (Tensor) - sample(s) the model's latent space (`z_dim`) to be decoded. `Size([n_samples, z_dim])`
+        - `x` (Tensor) - sample(s) the model's latent space (`z_dim`) to be decoded. `Size([n_samples, z_dim])`
 
         Returns
         -------
-        `decoded` (Tensor) - sample(s) in the model's observation space (`x_dim`). `Size([n_samples, x_dim])` 
+        - `decoded` (Tensor) - sample(s) in the model's observation space (`x_dim`). `Size([n_samples, x_dim])` 
         """
 
         with torch.no_grad():
@@ -220,7 +220,7 @@ class PiVAE(nn.Module):
         Parameters
         ----------
         - `x` (Tensor) - the sample(s) in the model's observation space (`x_dim`) to be encoded. `Size([n_samples, x_dim])`
-        - `return_stats` (bool) - if `True`, the mean and log of variance associated with the encoded sample are returned; otherwise only the encoded sample is returned.
+        - `return_stats` (bool, default=False) - if `True`, the mean and log of variance associated with the encoded sample are returned; otherwise only the encoded sample is returned.
 
         Returns
         -------
@@ -250,7 +250,7 @@ class PiVAE(nn.Module):
         Parameters
         ----------
         - `u` (int, float, list, tuple, or Tensor) - the label of the generated samples
-        - `device` (torch.device) - the torch device on which the model resides
+        - `device` (torch.device, default=None) - the torch device on which the model resides
 
         Returns
         -------
@@ -267,7 +267,7 @@ class PiVAE(nn.Module):
                 u = torch.as_tensor(u, dtype=torch.float, device=device).unsqueeze(dim=0)
 
             # Mean and log of variance of label u using label prior estimator of p(z|u)
-            label_mean, label_log_variance = self.z_prior(u) 
+            label_mean, label_log_variance = self.label_prior(u) 
         
         return label_mean, label_log_variance
     
@@ -283,12 +283,12 @@ class PiVAE(nn.Module):
         Parameters
         ----------
         - u (int, float, list, tuple, or Tensor) - the label of the generated samples
-        - n_samples (int) - the number of samples to generate
-        - device (torch.device) - the torch device on which the model resides
+        - n_samples (int, default=1) - the number of samples to generate
+        - device (torch.device, default=None) - the torch device on which the model resides
 
         Returns
         -------
-        samples (Tensor) - the generated samples corresponding to the specified label. Size([n_samples, x_dim]) 
+        - samples (Tensor) - the generated samples corresponding to the specified label. Size([n_samples, x_dim]) 
         """
         with torch.no_grad():
             if isinstance(u, int): # discrete label
@@ -299,7 +299,7 @@ class PiVAE(nn.Module):
                 u = torch.as_tensor(u, dtype=torch.float, device=device).unsqueeze(dim=0)
             
             # Mean and log of variance of label u
-            mean, log_variance = self.z_prior(u)
+            mean, log_variance = self.label_prior(u)
 
             # Create covariance matrix
             variance = torch.exp(log_variance).squeeze(dim=0)
@@ -333,12 +333,12 @@ class PiVAE(nn.Module):
         Parameters
         ----------
         - u (int, float, list, tuple, or Tensor) - the label of the generated samples
-        - n_samples (int) - the number of samples to generate
-        - device (torch.device) - the torch device on which the model resides
+        - n_samples (int, default=1) - the number of samples to generate
+        - device (torch.device, default=None) - the torch device on which the model resides
 
         Returns
         -------
-        samples (Tensor) - the generated samples corresponding to the specified label. Size([n_samples, z_dim]) 
+        - samples (Tensor) - the generated samples corresponding to the specified label. Size([n_samples, z_dim]) 
         """
 
         with torch.no_grad():
@@ -350,7 +350,7 @@ class PiVAE(nn.Module):
                 u = torch.as_tensor(u, dtype=torch.float, device=device).unsqueeze(dim=0)
 
             # Mean and log of variance of label u
-            mean, log_variance = self.z_prior(u)
+            mean, log_variance = self.label_prior(u)
 
             # Create covariance matrix
             variance = torch.exp(log_variance).squeeze(dim=0)
@@ -378,40 +378,44 @@ class PiVAE(nn.Module):
 
         Parameters
         ----------
-        `state` (bool) - the desired inference state
+        - `state` (bool) - the desired inference state
 
         Returns
         -------
-        `None`
+        - `None`
         """
 
         self.inference = state
 
     @staticmethod
     def compute_posterior(
-    z_mean: torch.Tensor, 
-    z_log_variance: torch.Tensor, 
-    lambda_mean: torch.Tensor, 
-    lambda_log_variance: torch.Tensor,
+    mean_0: torch.Tensor, 
+    log_variance_0: torch.Tensor, 
+    mean_1: torch.Tensor, 
+    log_variance_1: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Compute the full posterior of q(z|x,u)~q(z|x)p(z|u) as a product of Gaussians.
+        Computes the posterior of two distributions as a product of Gaussians.
 
         Parameters
         ----------
-        z_mean (Tensor) - means of encoded distribution q(z|x). Size([n_samples, z_dim])
-        z_log_variance (Tensor) - log of varinces of encoded distribution q(z|x). Size([n_samples, z_dim])
-        lambda_mean (Tensor) - means of label prior distribution p(z|u). Size([n_samples, z_dim])
-        lambda_log_variance (Tensor) - log of variances of label prior distribution p(z|u). Size([n_samples, z_dim])
+        - mean_0 (Tensor) - mean of a distribution. Size([n_samples, sample_dim])
+        - log_variance_0 (Tensor) - log of variance of a distribution. Size([n_samples, sample_dim])
+        - mean_1 (Tensor) - mean of a distribution. Size([n_samples, sample_dim])
+        - log_variance_1 (Tensor) - log of variance of a distribution. Size([n_samples, sample_dim])
 
         Returns
         -------
-        posterior_mean: approximate posterior means of distribution q(z|x,u). Size([n_samples, z_dim])
-        posterior_log_variance: approximate posterior log of variances of distribution q(z|x,u). Size([n_samples, z_dim])
+        - posterior_mean: mean of the posterior. Size([n_samples, sample_dim])
+        - posterior_log_variance: log of variances of the posterior. Size([n_samples, sample_dim])
+
+        Notes
+        -----
+        - The sample_dim should be equivalent amongst all four parameters. 
         """
 
-        variance_difference = z_log_variance - lambda_log_variance
-        posterior_mean = (z_mean / (1 + torch.exp(variance_difference))) + (lambda_mean / (1 + torch.exp(torch.neg(variance_difference))))
-        posterior_log_variance = z_log_variance + lambda_log_variance - torch.log(torch.exp(z_log_variance) + torch.exp(lambda_log_variance))
+        variance_difference = log_variance_0 - log_variance_1
+        posterior_mean = (mean_0 / (1 + torch.exp(variance_difference))) + (mean_1 / (1 + torch.exp(torch.neg(variance_difference))))
+        posterior_log_variance = log_variance_0 + log_variance_1 - torch.log(torch.exp(log_variance_0) + torch.exp(log_variance_1))
 
         return posterior_mean, posterior_log_variance

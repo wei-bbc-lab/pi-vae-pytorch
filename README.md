@@ -1,26 +1,42 @@
-# Poisson Identifiable VAE (pi-VAE)
+# Poisson Identifiable VAE (pi-VAE) 2.0
 
-This is a Pytorch implementation of [Poisson Identifiable VAE (pi-VAE)](https://arxiv.org/abs/2011.04798), used to construct latent variable models of neural activity while simultaneously modeling the relation between the latent and task variables (non-neural variables, e.g. sensory, motor, and other externally observable states).
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/mmcinnestaylor/pi-vae-pytorch/publish-to-pypi.yml?logo=github&logoColor=white&label=Publish%20to%20PyPI)
+![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)
+![License](https://img.shields.io/pypi/l/pi-vae-pytorch)  
+![PyPI - Version](https://img.shields.io/pypi/v/pi-vae-pytorch?label=pypi%20package)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/pi-vae-pytorch?label=pypi%20downloads)
 
-The original implementation by [Ding Zhou](https://zhd96.github.io/) and [Xue-Xin Wei](https://sites.google.com/view/xxweineuraltheory/) in Tensorflow 1.13 is available [here](https://github.com/zhd96/pi-vae).
+This is a Pytorch implementation of [Poisson Identifiable Variational Autoencoder (pi-VAE)](https://arxiv.org/abs/2011.04798), used to construct latent variable models of neural activity while simultaneously modeling the relation between the latent and task variables (non-neural variables, e.g. sensory, motor, and other externally observable states).  
 
-Another Pytorch implementation by [Lyndon Duong](http://lyndonduong.com/) is available [here](https://github.com/lyndond/lyndond.github.io/blob/0865902edb4648a8690ed8d449573d9236a72406/code/2021-11-25-pivae.ipynb).  
+A special thank you to [Zhongxuan Wu](https://github.com/ZhongxuanWu) who helped in the design and testing of this implementation.  
 
-A special thank you to [Zhongxuan Wu](https://github.com/ZhongxuanWu) who helped in the design and testing of this implementation. 
+### Model Versions
 
-## Install
+pi-VAE 1.0 and 2.0 differ solely in their loss function, specifically how the [Kullback–Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) component of the loss is computed. Additional information is available in the *Loss Function - ELBOLoss* section of this documentation.
 
+#### Version 2.0
+
+- This codebase is the only known publically available implementation, and also includes an implementation of the Version 1.0 loss function.  
+
+#### Version 1.0
+
+- The original implementation by [Ding Zhou](https://zhd96.github.io/) and [Xue-Xin Wei](https://sites.google.com/view/xxweineuraltheory/) in Tensorflow 1.13 is available [here](https://github.com/zhd96/pi-vae).
+
+- Another Pytorch implementation by [Lyndon Duong](http://lyndonduong.com/) is available [here](https://github.com/lyndond/lyndond.github.io/blob/0865902edb4648a8690ed8d449573d9236a72406/code/2021-11-25-pivae.ipynb).  
+
+
+
+## Installation
+
+It is possible to install this project using `pip`:
 ```
 pip install pi-vae-pytorch
 ```
 
-### From Source
-
-For those interested in modifying and testing the codebase, using an editable `pip` installation is recommended:
-
+It is also possible to clone this repo and install it using `pip`: 
 ```
-# pi-vae-pytorch/
-
+git clone https://github.com/mmcinnestaylor/pi-vae-pytorch.git
+cd pip-vae-pytorch
 pip install -e .
 ```
 
@@ -39,11 +55,11 @@ The Multi Layer Perceptron (MLP) is the primary building block of the aforementi
 
 ### Encoder
 
-The model's encoder is comprised of a single MLP, which learns the distribution q(z \| x). 
+The model's encoder is comprised of a single MLP, which learns to approximate the distribution q(z \| x). 
 
 ### Label Prior Estimator
 
-The model's label prior estimator learns the distribution p(z \| u). In the discrete label regime this module is comprised of two `nn.Embedding` submodules, while in the continuous label regime the module is comprised of a single MLP.
+The model's label prior estimator learns to approximate the distribution p(z \| u). In the discrete label regime this module is comprised of two `nn.Embedding` submodules, while in the continuous label regime the module is comprised of a single MLP.
 
 ### Decoder
 
@@ -80,16 +96,16 @@ pi_vae_pytorch.PiVAE(
     decoder_observation_model='poisson',
     decoder_fr_clamp_min=1E-7,
     decoder_fr_clamp_max=1E7,
-    z_prior_n_hidden_layers=2,
-    z_prior_hidden_layer_dim=32,
-    z_prior_hidden_layer_activation=nn.Tanh)
+    label_prior_n_hidden_layers=2,
+    label_prior_hidden_layer_dim=32,
+    label_prior_hidden_layer_activation=nn.Tanh)
 ```
 
 - **x_dim:** *int*  
     Dimension of observation `x`  
 
 - **u_dim:** *int*  
-    Dimension of observation labels. In the discrete regime, this corresponds to the number of unique classes/labels. In the continuous regime, this corresponds to the dimension of each label.  
+    Dimension of observation labels `u`. In the discrete regime, this corresponds to the number of unique classes/labels. In the continuous regime, this corresponds to the dimension of each label.  
 
 - **z_dim:** *int*  
     Dimension of latent `z`  
@@ -146,15 +162,15 @@ pi_vae_pytorch.PiVAE(
     - Only applied when `decoder_observation_model='poisson'`
 
     Maximum threshold used when clamping decoded firing rates.
-- **z_prior_n_hidden_layers:** *int, default=*`2`  
+- **label_prior_n_hidden_layers:** *int, default=*`2`  
     - Only applied when `discrete_labels=False`  
 
     Number of hidden layers in the MLP of the label prior estimator module. 
-- **z_prior_hidden_layer_dim:** *int, default=*`32`  
+- **label_prior_hidden_layer_dim:** *int, default=*`32`  
     - Only applied when `discrete_labels=False`
 
     Dimensionality of each hidden layer in the MLP of the label prior estimator module. 
-- **z_prior_hidden_layer_activation:** *nn.Module, default=*`nn.Tanh`  
+- **label_prior_hidden_layer_activation:** *nn.Module, default=*`nn.Tanh`  
     - Only applied when `discrete_labels=False`
 
     Activation function applied to the outputs of each hidden layer in the MLP of the label prior estimator module. 
@@ -184,12 +200,12 @@ pi_vae_pytorch.PiVAE(
 
     The noise model used when computing the pi-VAE's loss.  
 
-- **z_prior:** *nn.Module*  
+- **label_prior:** *nn.Module*  
     The model's label prior module which approximates p(z \| u).  
 
 ## Basic operation
 
-For every observation space sample `x` and associated label `u` provided to pi-VAE's `forward` method, the encoder and label statistics (mean & log of variance) are obtained from the encoder  and label prior modules. These values are used to obtain the same statistics from the full posterior q(z \| x,u). 
+For every observation space sample `x` and associated label `u` provided to pi-VAE's `forward` method, the encoder and label statistics (mean & log of variance) are obtained from the encoder  and label prior modules. These values are used to obtain the same statistics from the posterior q(z \| x,u). 
 
 The [reparameterization trick](https://en.wikipedia.org/wiki/Reparameterization_trick) is performed with the resulting mean & log of variance to obtain the sample's representation in the model's latent space. This latent representation is then passed to the model's decoder module, which generates the predicted firing rate in the model's observation space. 
 
@@ -197,7 +213,7 @@ The [reparameterization trick](https://en.wikipedia.org/wiki/Reparameterization_
 
 - **x:** *Tensor of shape(n_samples, x_dim)*  
     Samples in the model's observation space.  
-- **u:** *Tensor*  
+- **u:** *Tensor, default=*`None`  
     - *shape(n_samples)* when using discrete labels
     - *shape(n_samples, u_dim)* when using continuous labels  
     
@@ -213,29 +229,29 @@ A `dict` with the following items:
 - **encoder_z_sample:** *Tensor of shape(n_samples, z_dim)*  
     Latent space representation of each input sample computed from the encoder module's approximation of q(z \| x).  
 
-- **encoder_z_mean:** *Tensor of shape(n_samples, z_dim)*  
+- **encoder_mean:** *Tensor of shape(n_samples, z_dim)*  
     Mean of each input sample using the encoder module's approximation of q(z \| x).  
 
-- **encoder_z_log_variance:** *Tensor of shape(n_samples, z_dim)*  
+- **encoder_log_variance:** *Tensor of shape(n_samples, z_dim)*  
     Log of variance of each input sample using the encoder module's approximation of q(z \| x).  
 
-- **lambda_mean:** *Tensor of shape(n_samples, z_dim)*  
+- **label_mean:** *Tensor of shape(n_samples, z_dim)*  
     Mean of each input sample using the label prior module's approximation of p(z \| u).  
 
-- **lambda_log_variance:** *Tensor of shape(n_samples, z_dim)*  
+- **label_log_variance:** *Tensor of shape(n_samples, z_dim)*  
     Log of variance of input each sample using the label prior module's approximation of p(z \| u).  
 
 - **posterior_firing_rate:** *Tensor of shape(n_samples, x_dim)*  
     Predicted firing rate of `posterior_z_sample`.  
 
 - **posterior_z_sample:** *Tensor of shape(n_samples, z_dim)*      
-    Latent space representation of each input sample computed from the approximation of full posterior q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
+    Latent space representation of each input sample computed from the approximation of posterior q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
 
 - **posterior_mean:** *Tensor of shape(n_samples, z_dim)*  
-    Mean of each input sample using the approximation of full posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
+    Mean of each input sample using the approximation of posterior of q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
 
 - **posterior_log_variance:** *Tensor of shape(n_samples, z_dim)*  
-    Log of variance of each input sample using the approximation of full posterior q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
+    Log of variance of each input sample using the approximation of posterior q(z \| x,u) ~ q(z \| x) &times; p(z \| u).  
 
 #### Inference Mode
 
@@ -243,8 +259,8 @@ A `dict` with the following items:
 
 - **encoder_firing_rate:** *Tensor of shape(n_samples, x_dim)*  
 - **encoder_z_sample:** *Tensor of shape(n_samples, z_dim)*  
-- **encoder_z_mean:** *Tensor of shape(n_samples, z_dim)*  
-- **encoder_z_log_variance**: *Tensor of shape(n_samples, z_dim)*  
+- **encoder_mean:** *Tensor of shape(n_samples, z_dim)*  
+- **encoder_log_variance**: *Tensor of shape(n_samples, z_dim)*  
 
 ### Examples
 
@@ -332,8 +348,8 @@ outputs = model(x, u) # dict
 
     - **u**: *int, float, list, tuple, or Tensor of shape(1, u_dim)*  
         Label whose statictics will be returned. An integer is expected in the discrete label regime, while a float, list, tuple or Pytorch Tensor is expected in the continuous label regime.    
-    - **device**: *torch.device, default=None*  
-        Pytorch [device](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) on which the model currently resides. A value of `None` may be used when utilizing the default device.  
+    - **device**: *torch.device, default=*`None` *(uses the CPU*)  
+        A [`torch.device`](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) object representing the device on which operations will be performed. Should match the `torch.device` on which the model resides.  
     
     > **Returns:**  
 
@@ -354,8 +370,8 @@ outputs = model(x, u) # dict
     - **n_samples**: *int, default=*`1`  
         Number of samples to generate.  
 
-    - **device**: *torch.device, default=*`None`  
-        Pytorch [device](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) on which the model currently resides. A value of `None` may be used when utilizing the default device.  
+    - **device**: *torch.device, default=*`None` *(uses the CPU)*  
+        A [`torch.device`](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) object representing the device on which operations will be performed. Should match the `torch.device` on which the model resides.  
     
     > **Returns:**  
 
@@ -373,8 +389,8 @@ outputs = model(x, u) # dict
     - **n_samples**: *int, default=*`1`  
         Number of samples to generate.  
 
-    - **device**: *torch.device, default=*`None`  
-        Pytorch [device](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) on which the model currently resides. A value of `None` may be used when utilizing the default device.  
+    - **device**: *torch.device, default=*`None` *(uses the CPU)*  
+        A [`torch.device`](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) object representing the device on which operations will be performed. Should match the `torch.device` on which the model resides.  
     
     > **Returns:**  
 
@@ -393,16 +409,36 @@ outputs = model(x, u) # dict
 
     - None  
 
+## Static Methods
+
+- **compute_posterior(*mean_0, log_variance_0, mean_1, log_variance_1*)**  
+    Computes the posterior of two distributions as a product of Gaussians.  
+
+    > **Parameters:**  
+
+    - **mean_0:** *Tensor of shape(n_samples, sample_dim)*  
+        Mean of a distribution.  
+
+    - **log_variance_0:** *Tensor of shape(n_samples, sample_dim)*  
+        Log of variance of a distribution.  
+
+    - **mean_1:** *Tensor of shape(n_samples, sample_dim)*  
+        Mean of a distribution.  
+
+    - **log_variance_1:** *Tensor of shape(n_samples, sample_dim)*  
+        Log of variance of a distribution.  
+    
+    > **Returns:**  
+
+    - **posterior_mean:** *Tensor of shape(n_samples, sample_dim)*  
+        Mean of the posterior distribution.  
+
+    - **posterior_log_variance:** *Tensor of shape(n_samples, sample_dim)*  
+        Log of variance of the posterior distribution.  
+
 ## Loss Function - ELBOLoss
 
 pi-VAE learns the deep generative model and the approximate posterior q(z \| x, u) of the true posterior p(z \| x, u) by maximizing the evidence lower bound (ELBO) of p(x \| u). This loss function is implemented in the included `ELBOLoss` class.  
-
-#### Versions
-
-pi-VAE 1.0 and 2.0 differ solely in their loss function, specifically how the [Kullback–Leibler divergence](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) component of the loss is computed:
-
-- **Version 1:** Computes the KL divergence between the posterior and the label prior.  
-- **Version 2:** Computes the KL divergence between the posterior and the label prior as well as between the encoder and label prior. These two values are then weighted by a user specified $\alpha$ parameter. Documentation for the parameter is available below in the *Initialization* section.
 
 ### Initialization
 
@@ -418,10 +454,12 @@ pi_vae_pytorch.ELBOLoss(
     - Either `1` or `2`  
 
     The version of the loss function.  
+    - **Version 1:** Computes the KL divergence between the posterior and the label prior.  
+    - **Version 2:** Computes the KL divergence between the posterior and the label prior as well as between the encoder and label prior. These two values are then weighted by the `alpha` parameter.  
 
 - **alpha:** *float, default=*`0.5`  
     - Only applied when `version=2`  
-    - $\alpha \in [0, 1]$  
+    - Must reside within [0, 1]  
 
     Weights the contribution of the encoder KL loss and posterior KL loss to the total KL loss. 
 
@@ -487,17 +525,17 @@ pi_vae_pytorch.ELBOLoss(
 
     > **Parameters:**  
 
-    - **mean_0:** *Tensor of shape(n_samples, z_dim)*  
-        Predicted mean(s) of a distribution.  
+    - **mean_0:** *Tensor of shape(n_samples, sample_dim)*  
+        Mean of a distribution.  
 
-    - **log_variance_0:** *Tensor of shape(n_samples, z_dim)*  
-        Predicted log of the variance(s) of a distribution.  
+    - **log_variance_0:** *Tensor of shape(n_samples, sample_dim)*  
+        Log of variance of a distribution.  
 
-    - **mean_1:** *Tensor of shape(n_samples, z_dim)*  
-        Predicted mean(s) of a distribution.  
+    - **mean_1:** *Tensor of shape(n_samples, sample_dim)*  
+        Mean of a distribution.  
 
-    - **log_variance_1:** *Tensor of shape(n_samples, z_dim)*  
-        Predicted log of the variance(s) of a distribution.  
+    - **log_variance_1:** *Tensor of shape(n_samples, sample_dim)*  
+        Log of variance of a distribution.  
     
     > **Returns:**  
 
@@ -520,10 +558,10 @@ loss = loss_fn(
     posterior_firing_rate=outputs['posterior_firing_rate'],
     posterior_mean=outputs['posterior_mean'],
     posterior_log_variance=outputs['posterior_log_variance'],
-    label_mean=outputs['lambda_mean'],
-    label_log_variance=outputs['lambda_log_variance'],
-    encoder_mean=outputs['encoder_z_mean'],
-    encoder_log_variance=outputs['encoder_z_log_variance']
+    label_mean=outputs['label_mean'],
+    label_log_variance=outputs['label_log_variance'],
+    encoder_mean=outputs['encoder_mean'],
+    encoder_log_variance=outputs['encoder_log_variance']
 )
 
 loss.backward()
@@ -548,10 +586,10 @@ loss = loss_fn(
     posterior_firing_rate=outputs['posterior_firing_rate'],
     posterior_mean=outputs['posterior_mean'],
     posterior_log_variance=outputs['posterior_log_variance'],
-    label_mean=outputs['lambda_mean'],
-    label_log_variance=outputs['lambda_log_variance'],
-    encoder_mean=outputs['encoder_z_mean'],
-    encoder_log_variance=outputs['encoder_z_log_variance']
+    label_mean=outputs['label_mean'],
+    label_log_variance=outputs['label_log_variance'],
+    encoder_mean=outputs['encoder_mean'],
+    encoder_log_variance=outputs['encoder_log_variance']
     observation_noise_model=model.observation_noise_model
 )
 

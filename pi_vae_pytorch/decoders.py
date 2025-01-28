@@ -10,24 +10,24 @@ class GINFlowDecoder(nn.Module):
 
     Parameters
     ----------
-    x_dim (int) - observed x dimension (should be much larger than z_dim)
-    z_dim (int) - latent z dimension
-    n_gin_blocks (int) - number of GIN blocks. Default: 2
-    gin_block_depth (int) - number of AffineCouplingLayers per GINBlock. Default: 2
-    affine_input_layer_slice_dim (int) - index at which to split an n-dimensional sample x input to each AffineCouplingLayer. Default: None
-    affine_n_hidden_layers (int) - number of each AffineCouplingLayer's MLP hidden layers. Default: 2
-    affine_hidden_layer_dim (int) - dimension of each AffineCouplingLayer's MLP hidden layers. Default: None
-    affine_hidden_layer_activation (nn.Module) - activation function applied to each AffineCouplingLayer's MLP hidden layers. Default: nn.ReLU
-    nflow_n_hidden_layers (int) - number of the NFlowLayer's MLP hidden layers. Default: 2
-    nflow_hidden_layer_dim (int) - dimension of the NFlowLayer's MLP hidden layers. Default: None,
-    nflow_hidden_layer_activation (nn.Module) - activation function applied to the NFlowLayer's MLP hidden layers. Default: nn.ReLU,
-    observation_model (str) - poisson or gaussian. Default: poisson
+    - x_dim (int) - observed x dimension (should be much larger than z_dim)
+    - z_dim (int) - latent z dimension
+    - n_gin_blocks (int, default=2) - number of GIN blocks
+    - gin_block_depth (int, default=2) - number of AffineCouplingLayers per GINBlock
+    - affine_input_layer_slice_dim (int, default=None) - index at which to split an n-dimensional sample x input to each AffineCouplingLayer
+    - affine_n_hidden_layers (int, default=2) - number of each AffineCouplingLayer's MLP hidden layers
+    - affine_hidden_layer_dim (int, default=None) - dimension of each AffineCouplingLayer's MLP hidden layers
+    - affine_hidden_layer_activation (nn.Module, default=nn.ReLU) - activation function applied to each AffineCouplingLayer's MLP hidden layers
+    - nflow_n_hidden_layers (int, default=2) - number of the NFlowLayer's MLP hidden layers
+    - nflow_hidden_layer_dim (int, default=None) - dimension of the NFlowLayer's MLP hidden layers
+    - nflow_hidden_layer_activation (nn.Module, default=nn.ReLU) - activation function applied to the NFlowLayer's MLP hidden layers
+    - observation_model (str, default=poisson) - poisson or gaussian. Default: poisson
 
     Notes
     -----
-    affine_input_layer_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < affine_input_layer_slice_dim < x_dim.
-    affine_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(affine_hidden_layer_dim, x_dim // 4).
-    nflow_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(nflow_hidden_layer_dim, x_dim // 4).
+    - affine_input_layer_slice_dim (int) - when None, x_dim // 2 is assigned. Otherwise assigns the specified value, assuming 0 < affine_input_layer_slice_dim < x_dim.
+    - affine_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(affine_hidden_layer_dim, x_dim // 4).
+    - nflow_hidden_layer_dim (int) - when None, x_dim // 4 is assigned. Otherwise max(nflow_hidden_layer_dim, x_dim // 4).
     """
 
     def __init__(
