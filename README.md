@@ -4,7 +4,9 @@
 ![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)
 ![License](https://img.shields.io/pypi/l/pi-vae-pytorch)  
 ![PyPI - Version](https://img.shields.io/pypi/v/pi-vae-pytorch?label=pypi%20package)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/pi-vae-pytorch?label=pypi%20downloads)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/pi-vae-pytorch?label=pypi%20downloads)  
+![Conda - Version](https://img.shields.io/conda/vn/conda-forge/pi-vae-pytorch?label=conda%20package)
+![Conda - Downloads](https://img.shields.io/conda/d/conda-forge/pi-vae-pytorch?label=conda%20downloads)
 
 This is a Pytorch implementation of [Poisson Identifiable Variational Autoencoder (pi-VAE)](https://arxiv.org/abs/2011.04798), used to construct latent variable models of neural activity while simultaneously modeling the relation between the latent and task variables (non-neural variables, e.g. sensory, motor, and other externally observable states).  
 
@@ -31,6 +33,11 @@ pi-VAE 1.0 and 2.0 differ solely in their loss function, specifically how the [K
 It is possible to install this project using `pip`:
 ```
 pip install pi-vae-pytorch
+```
+
+or `conda`, using the `conda-forge` channel:
+```
+conda install -c conda-forge pi-vae-pytorch
 ```
 
 It is also possible to clone this repo and install it using `pip`: 
@@ -63,15 +70,13 @@ The model's label prior estimator learns to approximate the distribution p(z \| 
 
 ### Decoder
 
-The model's decoder learns to map a latent sample `z` to its predicted firing rate in the model's observation space. Inputs to the decoder are passed through the following submodules. 
+The model's decoder learns to map a latent sample `z` to its predicted firing rate in the model's observation space. Inputs to the decoder are passed through the following submodules:  
 
-#### NFlowLayer
+- **NFlowLayer**  
+This module is comprised of a MLP which maps `z` to the concatenation of `z` and `t(z)`.  
 
-This module is comprised of a MLP which maps `z` to the concatenation of `z` and `t(z)`.
-
-#### GINBlock
-
-Outputs from the `NFlowLayer` are passed to a series of `GINBlock` modules. Each `GINBlock` is comprised of a specified number of `AffineCouplingLayer` modules. Each `AffineCouplingLayer` is comprised of a MLP and performs an affine coupling transformation.
+- **GINBlock(s)**  
+Outputs from the `NFlowLayer` are passed to a series of `GINBlock` modules. Each `GINBlock` is comprised of a `PermutationLayer` and a specified number of `AffineCouplingLayer` modules. Each `AffineCouplingLayer` is comprised of a MLP and performs an affine coupling transformation.
 
 ## Initialization
 
@@ -133,7 +138,7 @@ pi_vae_pytorch.PiVAE(
     Index at which to split an n-dimensional input x.  
 
 - **decoder_affine_n_hidden_layers:** *int, default=*`2`  
-    Number of hidden layers in the MLP of the model's encoder.  
+    Number of hidden layers in the MLP of each AffineCouplingLayer.  
 
 - **decoder_affine_hidden_layer_dim:** *int, default=*`None` *(equivalent to* `x_dim // 4`*)*  
     Dimensionality of each hidden layer in the MLP of each AffineCouplingLayer.  
@@ -151,29 +156,34 @@ pi_vae_pytorch.PiVAE(
     Activation function applied to the outputs of each hidden layer in the MLP of the decoder's NFlowLayer.  
 
 - **decoder_observation_model:** *str, default=*`'poisson'`  
-    - One of `gaussian` or `poisson`
+    - Either `gaussian` or `poisson`
 
-    Observation model used by the model's decoder. 
+    Observation model used by the model's decoder.  
+
 - **decoder_fr_clamp_min:** *float, default=*`1E-7`  
     - Only applied when `decoder_observation_model='poisson'`
 
-    Mininimum threshold used when clamping decoded firing rates.
+    Mininimum threshold used when clamping decoded firing rates.  
+
 - **decoder_fr_clamp_max:** *float, default=*`1E7`  
     - Only applied when `decoder_observation_model='poisson'`
 
-    Maximum threshold used when clamping decoded firing rates.
+    Maximum threshold used when clamping decoded firing rates.  
+
 - **label_prior_n_hidden_layers:** *int, default=*`2`  
     - Only applied when `discrete_labels=False`  
 
-    Number of hidden layers in the MLP of the label prior estimator module. 
+    Number of hidden layers in the MLP of the label prior estimator module.  
+
 - **label_prior_hidden_layer_dim:** *int, default=*`32`  
     - Only applied when `discrete_labels=False`
 
-    Dimensionality of each hidden layer in the MLP of the label prior estimator module. 
+    Dimensionality of each hidden layer in the MLP of the label prior estimator module.  
+
 - **label_prior_hidden_layer_activation:** *nn.Module, default=*`nn.Tanh`  
     - Only applied when `discrete_labels=False`
 
-    Activation function applied to the outputs of each hidden layer in the MLP of the label prior estimator module. 
+    Activation function applied to the outputs of each hidden layer in the MLP of the label prior estimator module.  
 
 ## Attributes
 
@@ -181,7 +191,9 @@ pi_vae_pytorch.PiVAE(
     The model's decoder module which projects a latent space sample into the model's observation space.  
 
 - **decoder_observation_model:** *str*  
-    The distribution of the obervsation space samples. One of `poisson` or `gaussian`.
+    - Either `poisson` or `gaussian`.  
+
+    The distribution of the obervsation space samples.  
 
 - **decoder_fr_clamp_min:** *float*  
     Mininimum threshold used when clamping decoded firing rates.  
@@ -207,7 +219,7 @@ pi_vae_pytorch.PiVAE(
 
 For every observation space sample `x` and associated label `u` provided to pi-VAE's `forward` method, the encoder and label statistics (mean & log of variance) are obtained from the encoder  and label prior modules. These values are used to obtain the same statistics from the posterior q(z \| x,u). 
 
-The [reparameterization trick](https://en.wikipedia.org/wiki/Reparameterization_trick) is performed with the resulting mean & log of variance to obtain the sample's representation in the model's latent space. This latent representation is then passed to the model's decoder module, which generates the predicted firing rate in the model's observation space. 
+The [reparameterization trick](https://en.wikipedia.org/wiki/Reparameterization_trick) is performed with the resulting mean & log of variance to obtain the sample's representation in the model's latent space. This latent representation is then passed through the model's decoder module, which generates the predicted firing rate in the model's observation space. 
 
 ### Inputs
 
@@ -319,18 +331,28 @@ outputs = model(x, u) # dict
     - **decoded**: *Tensor of shape(n_samples, x_dim)*  
         Samples projected into the model's observation space.  
 
+    **Example:**  
+    ```
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2)
+    z_samples = torch.randn(10, 2) # Size([n_samples, z_dim])
+
+    decoded = mdl.decode(z_samples) # Size([n_samples, x_dim])
+    ```  
+
 - **encode(*x, return_stats=False*)**  
     Projects samples in the model's observation space (`x_dim`) into the model's latent space (`z_dim`) by passing them through the model's encoder module.  
     
     > **Parameters:**  
 
     - **x**: *Tensor of shape(n_samples, x_dim)*  
-        Samples to be projected into the model's observation space.  
+        Samples to be projected into the model's latent space.  
 
     - **return_stats**: *bool, default=False*  
         If `True`, the mean and log of the variance associated with the encoded sample are returned; otherwise only the encoded sample is returned.  
     
     > **Returns:**  
+
+    When `return_stats=True` a tuple of tensors, otherwise a single tensor.  
 
     - **encoded**: *Tensor of shape(n_samples, z_dim)*  
         Samples projected into the model's latent space.  
@@ -339,8 +361,17 @@ outputs = model(x, u) # dict
         Mean associated with a projected sample.  
 
     - **encoded_log_variance**: *Tensor of shape(n_samples, z_dim), optional*  
-        Log of the variances associated with a projected sample.  
-        
+        Log of the variance associated with a projected sample.  
+
+   **Example:**   
+    ```
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2)
+    x_samples = torch.randn(10, 100) # Size([n_samples, x_dim])
+
+    encoded = mdl.encode(x_samples) # Size([n_samples, z_dim])
+    encoded, encoded_mean, encoded_log_variance = mdl.encode(x_samples, return_stats=True) # each of Size([n_samples, z_dim])
+    ```  
+
 - **get_label_statistics(*u, device=None*)**  
     Returns the mean and log of the variance associated with a label `u` using the label prior estimator of p(z \| u).  
 
@@ -353,14 +384,47 @@ outputs = model(x, u) # dict
     
     > **Returns:**  
 
+    A tuple of tensors.  
+
     - **label_mean**: *Tensor of shape(1, z_dim)*  
         Mean of label `u`.  
 
     - **label_log_variance**: *Tensor of shape(1, z_dim)*  
         Log of the variance of label `u`.  
+
+    **Examples:**   
+    ```
+    ## Discrete labels ##
+
+    from random import randrange
+
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2)
+    label = randrange(3)
+
+    mean, log_variance = mdl.get_label_statistics(label) # each of Size([1, z_dim])
+    ```
+    ```
+    ## Continuous labels ##
+
+    # 1-D label #
+    mdl = PiVAE(x_dim=100, u_dim=1, z_dim=2, discrete_labels=False)
+    label = 0.37
+
+    mean, log_variance = mdl.get_label_statistics(label) # each of Size([1, z_dim])
+
+
+    # n-D label #
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2, discrete_labels=False)
     
-- **sample(*u, n_samples=1, device=None*)**  
-    Generates random samples in the model's observation dimension (`x_dim`). Samples are initially drawn from a Gaussian distribution in the model's latent dimension (`z_dim`) corresponding to specified label `u`. Samples are subsequently lifted to the model's observation dimension (`x_dim`) by passing them through the model's decoder.  
+    # ex tuple: label = (1.33, .82, .4)
+    # ex list: label = [1.33, .82, .4]
+    label = torch.randn(3) # Size([1, u_dim])
+
+    mean, log_variance = mdl.get_label_statistics(label) # each of Size([1, z_dim])
+    ```  
+
+- **sample(*u, n_samples=1, return_z=False, device=None*)**  
+    Generates random samples in the model's observation space (`x_dim`). Samples are initially drawn from a Gaussian distribution in the model's latent space (`z_dim`) corresponding to specified label `u`. Samples are subsequently projected into the model's observation space (`x_dim`) by passing them through the model's decoder.  
 
     > **Parameters:**  
 
@@ -370,16 +434,58 @@ outputs = model(x, u) # dict
     - **n_samples**: *int, default=*`1`  
         Number of samples to generate.  
 
+    - **return_z**: *bool, default=*`False`  
+        If `True` the latent space samples are returned along with the observation space samples. Otheriwse only the observation space samples are returned.  
+
     - **device**: *torch.device, default=*`None` *(uses the CPU)*  
         A [`torch.device`](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device) object representing the device on which operations will be performed. Should match the `torch.device` on which the model resides.  
     
     > **Returns:**  
 
+    When `return_z=True` a tuple of tensors, otherwise a single tensor.  
+
     - **samples**: *Tensor of shape(n_samples, x_dim)*  
-        Randomly generated sample(s).  
+        Randomly generated sample(s) projected into the model's observation space.  
+
+    - **z_samples**: *Tensor of shape(n_samples, z_dim), optional*  
+        Randomly generated sample(s) in the model's latent space.  
+
+    **Examples:**   
+    ```
+    ## Discrete labels ##
+
+    from random import randrange
+
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2)
+    label = randrange(3)
+
+    samples = mdl.sample(label, n_samples=10) # Size([n_samples, x_dim])
+    samples, z_samples = mdl.sample(label, n_samples=10, return_z=True) # Size([n_samples, x_dim]). Size([n_samples, z_dim])
+    ```  
+    ```
+    ## Continuous labels ##
+
+    # 1-D label #
+    mdl = PiVAE(x_dim=100, u_dim=1, z_dim=2, discrete_labels=False)
+    label = 0.37
+
+    samples = mdl.sample(label, n_samples=10) # Size([n_samples, x_dim])
+    samples, z_samples = mdl.sample(label, n_samples=10, return_z=True) # Size([n_samples, x_dim]), Size([n_samples, z_dim])
+
+
+    # n-D label #
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2, discrete_labels=False)
     
+    # ex tuple: label = (1.33, .82, .4)
+    # ex list: label = [1.33, .82, .4]
+    label = torch.randn(3) # Size([1, u_dim])
+
+    samples = mdl.sample(label, n_samples=10) # Size([n_samples, x_dim])
+    samples, z_samples = mdl.sample(label, n_samples=10, return_z=True) # Size([n_samples, x_dim]), Size([n_samples, z_dim])
+    ```  
+
 - **sample_z(*u, n_samples=1, device=None*)**  
-    Generates random samples in the model's latent dimension (`z_dim`). Samples are drawn from a Gaussian distribution corresponding to specified label `u`.  
+    Generates random samples in the model's latent space (`z_dim`). Samples are drawn from a Gaussian distribution corresponding to specified label `u`.  
 
     > **Parameters:**  
 
@@ -397,6 +503,37 @@ outputs = model(x, u) # dict
     - **samples**: *Tensor of shape(n_samples, z_dim)*  
         Randomly generated sample(s).  
 
+    **Examples:**   
+    ```
+    ## Discrete labels ##
+
+    from random import randrange
+
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2)
+    label = randrange(3)
+
+    samples = mdl.sample(label, n_samples=10) # Size([n_samples, z_dim])
+    ```  
+    ```
+    ## Continuous labels ##
+
+    # 1-D label #
+    mdl = PiVAE(x_dim=100, u_dim=1, z_dim=2, discrete_labels=False)
+    label = 0.37
+
+    samples = mdl.sample(label, n_samples=10) # Size([n_samples, z_dim])
+
+
+    # n-D label #
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2, discrete_labels=False)
+    
+    # ex tuple: label = (1.33, .82, .4)
+    # ex list: label = [1.33, .82, .4]
+    label = torch.randn(3) # Size([1, u_dim])
+
+    samples = mdl.sample(label, n_samples=10) # Size([n_samples, z_dim])
+    ```  
+
 - **set_inference_mode(*state*)**  
     Toggles the model's inference state flag. When `True`, the model's `forward` method does not utilize the `u` parameter. When `False`,  the `u` parameter is utilized. Useful for working with unlabeled data. *NOTE: Inference mode must be disabled during model training.*  
 
@@ -408,6 +545,15 @@ outputs = model(x, u) # dict
     > **Returns:**  
 
     - None  
+
+    **Example:**   
+    ```
+    mdl = PiVAE(x_dim=100, u_dim=3, z_dim=2) # Inference Mode disabled by default
+    x_samples = torch.randn(10, 100) # Size([n_samples, x_dim])
+
+    mdl.set_inference_mode(True) # Inference Mode enabled
+    outputs = mdl(x_samples) # dict
+    ```  
 
 ## Static Methods
 

@@ -275,6 +275,7 @@ class PiVAE(nn.Module):
         self,
         u: Union[float, int, list, tuple, torch.Tensor],
         n_samples: int = 1,
+        return_z: bool = False,
         device: Optional[torch.device] = None
         ) -> torch.Tensor:
         """
@@ -284,11 +285,13 @@ class PiVAE(nn.Module):
         ----------
         - u (int, float, list, tuple, or Tensor) - the label of the generated samples
         - n_samples (int, default=1) - the number of samples to generate
+        - return_z (bool, default=False) - if True the latent space samples are also returned
         - device (torch.device, default=None) - the torch device on which the model resides
 
         Returns
         -------
-        - samples (Tensor) - the generated samples corresponding to the specified label. Size([n_samples, x_dim]) 
+        - samples (Tensor) - the projected latent space samples corresponding to the specified label. Size([n_samples, x_dim])
+        - z_samples (Tensor) [optional] - the generated latent space samples corresponding to the specified label. Size([n_samples, z_dim]) 
         """
         with torch.no_grad():
             if isinstance(u, int): # discrete label
@@ -313,13 +316,16 @@ class PiVAE(nn.Module):
             distribution = torch.distributions.multivariate_normal.MultivariateNormal(mean, covar)
             
             # Generate z samples
-            samples = distribution.sample((n_samples,))
-            samples = samples.squeeze(dim=1)
+            z_samples = distribution.sample((n_samples,))
+            z_samples = z_samples.squeeze(dim=1)
 
             # Lift samples to x dimension
-            samples = self.decoder(samples)                                 
+            samples = self.decoder(z_samples)
 
-        return samples
+        if return_z:
+            return samples, z_samples
+        else:
+            return samples
 
     def sample_z(
         self,

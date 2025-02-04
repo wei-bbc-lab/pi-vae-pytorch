@@ -15,6 +15,8 @@ maintainers = [
 description = "A Pytorch implementation of Poisson Identifiable VAE (pi-VAE), a variational auto encoder used to construct latent variable models of neural activity while simultaneously modeling the relation between the latent and task variables."
 readme = "README.md"
 keywords = [
+    "artificial intelligence",
+    "deep learning",
     "vae",
     "variational autoencoder",
     "pi-vae",

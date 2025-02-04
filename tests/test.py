@@ -2,7 +2,7 @@ import torch
 from pi_vae_pytorch import PiVAE
 
 
-n_samples = 1
+n_samples = 10
 x_dim = 100
 u_dim = 3
 z_dim = 2
@@ -18,16 +18,16 @@ discrete_labels = False
 
 model = PiVAE(
     x_dim = x_dim,
-    u_dim = u_dim if discrete_labels else 1,
+    u_dim = u_dim,
     z_dim = z_dim,
     discrete_labels=discrete_labels
 )
 
-u = torch.randn(n_samples, 1)
+u = torch.randn(n_samples, u_dim)
 outputs = model(x, u) 
 
 for key in outputs.keys():
-    if key == "posterior_firing_rate":
+    if 'firing_rate' in key:
         dim2 = x_dim
     else:
         dim2 = z_dim
@@ -43,7 +43,7 @@ discrete_labels = True
 
 model = PiVAE(
     x_dim = x_dim,
-    u_dim = u_dim if discrete_labels else 1,
+    u_dim = u_dim,
     z_dim = z_dim,
     discrete_labels=discrete_labels
 )
@@ -52,7 +52,7 @@ u = torch.randint(0, u_dim, (n_samples,))
 outputs = model(x, u) 
 
 for key in outputs.keys():
-    if key == "posterior_firing_rate":
+    if 'firing_rate' in key:
         dim2 = x_dim
     else:
         dim2 = z_dim
