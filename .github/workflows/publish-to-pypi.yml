@@ -31,10 +31,7 @@ jobs:
           path: dist/
     publish-to-testpypi:
       name: Publish Python 🐍 distribution 📦 to TestPyPI 
-
-      needs:
-      - build 
-      
+      needs: build
       runs-on: ubuntu-latest
       environment:
         name: testpypi
@@ -54,10 +51,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
     publish-to-pypi:
       name: Publish Python 🐍 distribution 📦 to PyPI 
-
-      needs:
-      - build 
-      
+      needs: [build, publish-to-testpypi]
       runs-on: ubuntu-latest
       environment:
         name: pypi
