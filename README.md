@@ -43,7 +43,7 @@ conda install -c conda-forge pi-vae-pytorch
 It is also possible to clone this repo and install it using `pip`: 
 ```
 git clone https://github.com/mmcinnestaylor/pi-vae-pytorch.git
-cd pip-vae-pytorch
+cd pi-vae-pytorch
 pip install -e .
 ```
 
@@ -318,12 +318,12 @@ outputs = model(x, u) # dict
 
 ## Class Methods
 
-- **decode(*x*)**  
+- **decode(*z*)**  
     Projects samples in the model's latent space (`z_dim`) into the model's observation space (`x_dim`) by passing them through the model's decoder module.  
 
     > **Parameters:**  
 
-    - **x**: *Tensor of shape(n_samples, z_dim)*  
+    - **z**: *Tensor of shape(n_samples, z_dim)*  
         Samples to be projected into the model's observation space.  
     
     > **Returns:**  

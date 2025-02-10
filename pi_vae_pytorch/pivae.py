@@ -187,14 +187,14 @@ class PiVAE(nn.Module):
 
     def decode(
         self,
-        x: torch.Tensor
+        z: torch.Tensor
         ) -> torch.Tensor:
         """
         Projects samples in the model's latent space (`z_dim`) into the model's observation space (`x_dim`) by passing them through the model's decoder module.
 
         Parameters
         ----------
-        - `x` (Tensor) - sample(s) the model's latent space (`z_dim`) to be decoded. `Size([n_samples, z_dim])`
+        - `z` (Tensor) - sample(s) the model's latent space (`z_dim`) to be decoded. `Size([n_samples, z_dim])`
 
         Returns
         -------
@@ -202,7 +202,7 @@ class PiVAE(nn.Module):
         """
 
         with torch.no_grad():
-            decoded = self.decoder(x)
+            decoded = self.decoder(z)
 
             if self.decoder_observation_model == 'poisson':
                 decoded = torch.clamp(decoded, min=self.decoder_fr_clamp_min, max=self.decoder_fr_clamp_max)
